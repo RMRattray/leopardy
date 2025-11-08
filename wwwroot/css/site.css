@@ -29,3 +29,80 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+
+/* Jeopardy Board Styling */
+.jeopardy-board {
+  background-color: #060CE9;
+  color: #FFD700;
+  font-family: 'Swiss 911', 'Impact', 'Arial Black', sans-serif;
+}
+
+.jeopardy-cell {
+  background-color: #060CE9;
+  color: #FFD700;
+  font-weight: bold;
+  font-size: 1.5em;
+  cursor: pointer;
+  min-width: 150px;
+  min-height: 100px;
+  border: 2px solid #000;
+  transition: all 0.3s ease;
+}
+
+.jeopardy-cell:hover:not(.answered) {
+  background-color: #0a10ff;
+  transform: scale(1.05);
+}
+
+.jeopardy-cell.answered {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #333;
+}
+
+.jeopardy-category {
+  background-color: #060CE9;
+  color: #FFF;
+  font-weight: bold;
+  font-size: 1.2em;
+  text-transform: uppercase;
+}
+
+.clue-display {
+  background-color: #000;
+  color: #FFF;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.clue-question {
+  font-size: 2em;
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.buzz-button {
+  background-color: #FFD700;
+  color: #000;
+  font-weight: bold;
+  font-size: 1.5em;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.buzz-button:hover:not(:disabled) {
+  background-color: #FFED4E;
+  transform: scale(1.1);
+}
+
+.buzz-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -1,0 +1,80 @@
+@page
+@model Leopardy.Pages.PlayModel
+@{
+    ViewData["Title"] = "Play Game";
+}
+
+<div class="container-fluid">
+    <div id="joinGame" class="text-center mt-5">
+        <h1 class="mb-4">Join a Jeopardy! Game</h1>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="playerName" class="form-label">Your Name</label>
+                            <input type="text" class="form-control form-control-lg" id="playerName" placeholder="Enter your name">
+                        </div>
+                        <div class="mb-3">
+                            <label for="gameCodeInput" class="form-label">Game Code</label>
+                            <input type="text" class="form-control form-control-lg" id="gameCodeInput" placeholder="Enter game code" maxlength="4">
+                        </div>
+                        <button id="joinGameBtn" class="btn btn-success btn-lg">Join Game</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="gameView" class="d-none">
+        <div class="row mb-3">
+            <div class="col-12 text-center">
+                <h2 id="playerNameDisplay"></h2>
+                <h3>Score: <span id="playerScore">0</span></h3>
+            </div>
+        </div>
+
+        <div id="clueView" class="d-none">
+            <div class="card bg-dark text-white mb-3" style="min-height: 400px;">
+                <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                    <h4 id="clueCategory" class="card-title mb-3"></h4>
+                    <h5 id="clueValue" class="card-subtitle mb-4"></h5>
+                    <p id="clueQuestion" class="card-text fs-3 text-center"></p>
+                    <div id="buzzArea" class="mt-4">
+                        <button id="buzzBtn" class="btn btn-warning btn-lg">Buzz In (Spacebar)</button>
+                    </div>
+                    <div id="answerArea" class="d-none mt-4 w-100" style="max-width: 600px;">
+                        <input type="text" class="form-control form-control-lg mb-3" id="answerInput" placeholder="Type your answer...">
+                        <button id="submitAnswerBtn" class="btn btn-primary btn-lg">Submit Answer</button>
+                        <div id="answerTimer" class="mt-3">
+                            <div class="progress">
+                                <div id="timerBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+                            </div>
+                            <p class="text-center mt-2">Time remaining: <span id="timeRemaining">5</span> seconds</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="boardView">
+            <div id="jeopardyBoard" class="table-responsive">
+                <table class="table table-bordered text-center" style="background-color: #060CE9;">
+                    <thead>
+                        <tr id="categoryRow"></tr>
+                    </thead>
+                    <tbody id="cluesBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/play.js"></script>
+
+@section Scripts {
+    <script>
+        // SignalR will be loaded here
+    </script>
+}
+

@@ -1,10 +1,31 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Jeopardy!";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="text-center mt-5">
+    <h1 class="display-1 mb-4" style="color: #060CE9; font-family: 'Swiss 911', 'Impact', sans-serif; text-shadow: 3px 3px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;">JEOPARDY!</h1>
+    
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-5 mb-4">
+            <div class="card h-100 shadow-lg">
+                <div class="card-body d-flex flex-column">
+                    <h2 class="card-title mb-4">Host a Game</h2>
+                    <p class="card-text flex-grow-1">Create and host a Jeopardy! game. Select a game template, share the game code, and control the game flow.</p>
+                    <a href="/Host" class="btn btn-primary btn-lg mt-auto">Host Game</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-5 mb-4">
+            <div class="card h-100 shadow-lg">
+                <div class="card-body d-flex flex-column">
+                    <h2 class="card-title mb-4">Play a Game</h2>
+                    <p class="card-text flex-grow-1">Join an existing Jeopardy! game as a player. Enter your name and the game code to start playing.</p>
+                    <a href="/Play" class="btn btn-success btn-lg mt-auto">Join Game</a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
