@@ -5,6 +5,7 @@ let categories = [];
 let clueAnswered = {};
 let answerTimer;
 let timeRemaining = 5;
+let canSelect = false;
 let canBuzz = false;
 let hasBuzzedIn = false;
 
@@ -41,11 +42,26 @@ function initializeSignalR() {
         clueAnswered = answered || {};
         
         document.getElementById('joinGame').classList.add('d-none');
-        document.getElementById('gameView').classList.remove('d-none');
+        document.getElementById('waitScreen').classList.remove('d-none');
         document.getElementById('playerNameDisplay').textContent = playerName;
-        
-        buildBoard();
     });
+
+    connection.on("GameStarted", (selectedPlayerName) => {
+        document.getElementById('waitScreen').classList.add('d-none');
+        document.getElementById('gameView').classList.remove('d-none');
+        canSelect = (selectedPlayerName === playerName);
+        if (canSelect) document.getElementById('selectTurn').classList.remove('d-none');
+        else  document.getElementById('selectTurn').classList.add('d-none');
+
+        buildBoard();
+    })
+
+    connection.on("PlayerSelected", (selectedPlayerName) => {
+        console.log("Receiving 'playerSelected' with ", selectedPlayerName, "; myplayer name is ", playerName);
+        canSelect = (selectedPlayerName === playerName);
+        if (canSelect) document.getElementById('selectTurn').classList.remove('d-none');
+        else  document.getElementById('selectTurn').classList.add('d-none');
+    })
 
     connection.on("ClueSelected", (question, categoryName, value) => {
         showClue(question, categoryName, value);
@@ -160,6 +176,7 @@ function buildBoard() {
                 const clueKey = `${catIndex}-${i}`;
                 const isAnswered = clueAnswered[clueKey] || false;
                 const clueValue = clue.value || clue.Value;
+                const categoryName = category.name || category.Name;
                 
                 if (isAnswered) {
                     td.textContent = '';
@@ -169,6 +186,11 @@ function buildBoard() {
                     td.textContent = `$${clueValue}`;
                     // Players can only select clues if they have control (got previous clue correct)
                     // For now, allow all players to see the board
+                }
+
+                if (canSelect) {
+                    console.log("The event listener is being added");
+                    td.addEventListener('click', () => selectClue(categoryName, clueValue));
                 }
             }
             
@@ -180,6 +202,11 @@ function buildBoard() {
 
 function updateBoard() {
     buildBoard();
+}
+
+function selectClue(categoryName, value) {
+    console.log("The clue selector is being run with parameters", gameId, categoryName, value);
+    connection.invoke("SelectClue", gameId, categoryName, value);
 }
 
 function updateScore(players) {

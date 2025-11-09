@@ -51,6 +51,26 @@ public class GameHub : Hub
         await Clients.Group(gameId).SendAsync("PlayerJoined", game.Players);
     }
 
+    public async Task StartGame(string gameId)
+    {
+        var success = _gameManager.StartGame(gameId);
+
+        if (!success)
+        {
+            await Clients.Caller.SendAsync("Error", "Failed to start game");
+            return;
+        }
+
+        var game = _gameManager.GetGame(gameId);
+        if (game == null)
+        {
+            await Clients.Caller.SendAsync("Error", "Game not found");
+            return;
+        }
+
+        await Clients.Group(gameId).SendAsync("GameStarted", game.Players[0].Name);
+    }
+
     public async Task SelectClue(string gameId, string categoryName, int value)
     {
         _gameManager.SelectClue(gameId, categoryName, value);
@@ -103,12 +123,13 @@ public class GameHub : Hub
         
         if (game != null && clueKey != null)
         {
-            await Clients.Group(gameId).SendAsync("AnswerJudged", isCorrect, game.Players, clueKey);
-            
             if (isCorrect && correctAnswer != null)
             {
                 await Clients.Group(gameId).SendAsync("ShowAnswer", correctAnswer);
+                await Clients.Group(gameId).SendAsync("PlayerSelected", game.CurrentPlayer.Name);
             }
+
+            await Clients.Group(gameId).SendAsync("AnswerJudged", isCorrect, game.Players, clueKey);
             
             // Reset clue after a delay
             _gameManager.ResetClue(gameId);

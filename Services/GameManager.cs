@@ -35,6 +35,8 @@ public class GameManager
 
         lock (_lock)
         {
+            if (game.Started) return false;
+
             if (game.Players.Any(p => p.ConnectionId == connectionId))
                 return false;
 
@@ -47,6 +49,20 @@ public class GameManager
 
             game.Players.Add(player);
             _connectionToGame.TryAdd(connectionId, gameId);
+        }
+
+        return true;
+    }
+
+    public bool StartGame(string gameId)
+    {
+        if (!_games.TryGetValue(gameId, out var game)) return false;
+
+        lock (_lock)
+        {
+            if (game.Started) return false;
+
+            game.Started = true;
         }
 
         return true;
@@ -173,12 +189,6 @@ public class GameManager
 
         game.ClueAnswered[clueKey] = true;
         game.WaitingForAnswer = false;
-        
-        var currentPlayerCopy = game.CurrentPlayer;
-        var currentAnswerCopy = game.CurrentAnswer;
-        
-        game.CurrentPlayer = null;
-        game.CurrentAnswer = null;
         
         return clueKey;
     }

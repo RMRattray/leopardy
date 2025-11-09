@@ -5,6 +5,7 @@ public class Game
     public string GameId { get; set; } = string.Empty;
     public string GameName { get; set; } = string.Empty;
     public string HostConnectionId { get; set; } = string.Empty;
+    public bool Started { get; set; } = false;
     public List<Player> Players { get; set; } = new();
     public List<Category> Categories { get; set; } = new();
     public Clue? CurrentClue { get; set; }

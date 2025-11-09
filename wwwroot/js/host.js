@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeSignalR();
     
     document.getElementById('createGameBtn').addEventListener('click', createGame);
+    document.getElementById('startGameBtn').addEventListener('click', startGame);
     document.getElementById('markCorrect').addEventListener('click', () => judgeAnswer(true));
     document.getElementById('markIncorrect').addEventListener('click', () => judgeAnswer(false));
     document.getElementById('closeClueBtn').addEventListener('click', closeClue);
@@ -25,10 +26,14 @@ function initializeSignalR() {
         document.getElementById('gameCode').textContent = gameCode;
         document.getElementById('gameSelection').classList.add('d-none');
         document.getElementById('gameLobby').classList.remove('d-none');
-        document.getElementById('gameBoard').classList.remove('d-none');
-        
-        buildBoard();
     });
+
+    connection.on("GameStarted", (playerName) => {
+        document.getElementById('gameLobby').classList.add('d-none');
+        document.getElementById('gameBoard').classList.remove('d-none');
+
+        buildBoard();
+    })
 
     connection.on("PlayerJoined", (players) => {
         updatePlayersList(players);
@@ -85,6 +90,10 @@ function createGame() {
     }
     
     connection.invoke("CreateGame", "Jeopardy Game", template);
+}
+
+function startGame() {
+    connection.invoke("StartGame", gameId);
 }
 
 function buildBoard() {
