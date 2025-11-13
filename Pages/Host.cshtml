@@ -12,13 +12,49 @@
                 <div class="card">
                     <div class="card-body">
                         <h3 class="card-title mb-3">Game Setup</h3>
-                        <div class="mb-3">
-                            <label for="gameTemplate" class="form-label">Select a Game Template</label>
-                            <select id="gameTemplate" class="form-select form-select-lg">
-                                <option value="">-- Select a game --</option>
-                                <option value="Science & Technology">Science & Technology</option>
-                                <option value="History & Geography">History & Geography</option>
-                            </select>
+                        
+                        <ul class="nav nav-tabs mb-3" id="gameSourceTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="template-tab" data-bs-toggle="tab" data-bs-target="#template" type="button" role="tab">Templates</button>
+                            </li>
+                            <li class="nav-item" role="presentation" id="savedGamesTabItem" style="display: none;">
+                                <button class="nav-link" id="saved-tab" data-bs-toggle="tab" data-bs-target="#saved" type="button" role="tab">My Games</button>
+                            </li>
+                            <li class="nav-item" role="presentation" id="csvUploadTabItem">
+                                <button class="nav-link" id="csv-tab" data-bs-toggle="tab" data-bs-target="#csv" type="button" role="tab">Upload CSV</button>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content" id="gameSourceTabsContent">
+                            <div class="tab-pane fade show active" id="template" role="tabpanel">
+                                <div class="mb-3">
+                                    <label for="gameTemplate" class="form-label">Select a Game Template</label>
+                                    <select id="gameTemplate" class="form-select form-select-lg">
+                                        <option value="">-- Select a game --</option>
+                                        <option value="Science & Technology">Science & Technology</option>
+                                        <option value="History & Geography">History & Geography</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="saved" role="tabpanel">
+                                <div class="mb-3">
+                                    <label for="savedGameSelect" class="form-label">Select a Saved Game</label>
+                                    <select id="savedGameSelect" class="form-select form-select-lg">
+                                        <option value="">-- Loading games --</option>
+                                    </select>
+                                </div>
+                                <div id="savedGamesError" class="alert alert-danger d-none"></div>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="csv" role="tabpanel">
+                                <div class="mb-3">
+                                    <label for="csvFile" class="form-label">Upload CSV File</label>
+                                    <input type="file" id="csvFile" class="form-control" accept=".csv">
+                                    <small class="form-text text-muted">Upload a CSV file in the format: Category row, then alternating clue/answer rows</small>
+                                </div>
+                                <div id="csvError" class="alert alert-danger d-none"></div>
+                            </div>
                         </div>
                         
                         <div class="row mb-3">

@@ -3,14 +3,27 @@ let gameId;
 let categories = [];
 let clueAnswered = {};
 
+let customCategories = null;
+let isAuthenticated = false;
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeSignalR();
+    
+    // Check authentication
+    checkAuth();
+    
+    // Load saved games if authenticated
+    loadSavedGames();
+    
+    // Handle CSV file upload
+    document.getElementById('csvFile').addEventListener('change', handleCsvUpload);
     
     document.getElementById('createGameBtn').addEventListener('click', createGame);
     document.getElementById('startGameBtn').addEventListener('click', startGame);
     document.getElementById('markCorrect').addEventListener('click', () => judgeAnswer(true));
     document.getElementById('markIncorrect').addEventListener('click', () => judgeAnswer(false));
     document.getElementById('closeClueBtn').addEventListener('click', closeClue);
+    document.getElementById('savedGameSelect').addEventListener('change', handleSavedGameSelect);
 });
 
 function initializeSignalR() {
@@ -89,11 +102,116 @@ function initializeSignalR() {
         });
 }
 
-function createGame() {
-    const template = document.getElementById('gameTemplate').value;
-    if (!template) {
-        alert('Please select a game template');
+function checkAuth() {
+    fetch('/api/auth/check')
+        .then(response => response.json())
+        .then(data => {
+            isAuthenticated = data.isAuthenticated;
+            if (isAuthenticated) {
+                document.getElementById('savedGamesTabItem').style.display = 'block';
+            }
+        });
+}
+
+function loadSavedGames() {
+    fetch('/api/games/saved')
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            }
+            return [];
+        })
+        .then(games => {
+            const select = document.getElementById('savedGameSelect');
+            select.innerHTML = '<option value="">-- Select a saved game --</option>';
+            games.forEach(game => {
+                const option = document.createElement('option');
+                option.value = game.id;
+                option.textContent = game.name;
+                select.appendChild(option);
+            });
+        })
+        .catch(err => {
+            console.error('Error loading saved games:', err);
+        });
+}
+
+function handleSavedGameSelect() {
+    const gameId = document.getElementById('savedGameSelect').value;
+    if (!gameId) {
+        customCategories = null;
         return;
+    }
+    
+    fetch(`/api/games/saved/${gameId}`)
+        .then(response => response.json())
+        .then(data => {
+            customCategories = data.categories;
+        })
+        .catch(err => {
+            console.error('Error loading saved game:', err);
+            document.getElementById('savedGamesError').textContent = 'Error loading game';
+            document.getElementById('savedGamesError').classList.remove('d-none');
+        });
+}
+
+function handleCsvUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const csvContent = e.target.result;
+        
+        fetch('/api/games/import-csv', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ csvContent: csvContent })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.categories) {
+                customCategories = data.categories;
+                document.getElementById('csvError').classList.add('d-none');
+            } else {
+                throw new Error(data.error || 'Error importing CSV');
+            }
+        })
+        .catch(err => {
+            console.error('Error importing CSV:', err);
+            document.getElementById('csvError').textContent = err.message || 'Error importing CSV';
+            document.getElementById('csvError').classList.remove('d-none');
+            customCategories = null;
+        });
+    };
+    reader.readAsText(file);
+}
+
+function createGame() {
+    const activeTab = document.querySelector('.nav-link.active').id;
+    let selectedCategories = null;
+    
+    if (activeTab === 'template-tab') {
+        const template = document.getElementById('gameTemplate').value;
+        if (!template) {
+            alert('Please select a game template');
+            return;
+        }
+        // Will use template name in GameHub
+    } else if (activeTab === 'saved-tab') {
+        if (!customCategories) {
+            alert('Please select a saved game');
+            return;
+        }
+        selectedCategories = customCategories;
+    } else if (activeTab === 'csv-tab') {
+        if (!customCategories) {
+            alert('Please upload a CSV file');
+            return;
+        }
+        selectedCategories = customCategories;
     }
     
     const maxPlayersPerRoundInput = document.getElementById('maxPlayersPerRound').value;
@@ -111,7 +229,14 @@ function createGame() {
     const correctGuesserBehavior = parseInt(document.getElementById('correctGuesserBehavior').value);
     const correctGuesserChooses = document.getElementById('correctGuesserChooses').checked;
     
-    connection.invoke("CreateGame", "Jeopardy Game", template, maxPlayersPerRound, maxPlayersPerGame, correctGuesserBehavior, correctGuesserChooses);
+    if (selectedCategories) {
+        // Use custom categories
+        connection.invoke("CreateGameWithCategories", "Jeopardy Game", selectedCategories, maxPlayersPerRound, maxPlayersPerGame, correctGuesserBehavior, correctGuesserChooses);
+    } else {
+        // Use template
+        const template = document.getElementById('gameTemplate').value;
+        connection.invoke("CreateGame", "Jeopardy Game", template, maxPlayersPerRound, maxPlayersPerGame, correctGuesserBehavior, correctGuesserChooses);
+    }
 }
 
 function startGame() {

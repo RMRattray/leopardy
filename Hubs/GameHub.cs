@@ -39,6 +39,42 @@ public class GameHub : Hub
         await Groups.AddToGroupAsync(Context.ConnectionId, game.GameId);
     }
 
+    public async Task CreateGameWithCategories(string gameName, object categoriesData, int? maxPlayersPerRound, int? maxPlayersPerGame, 
+        int correctGuesserBehavior, bool correctGuesserChooses)
+    {
+        // Validate max players constraints
+        if (maxPlayersPerGame.HasValue && maxPlayersPerRound.HasValue && maxPlayersPerRound.Value > maxPlayersPerGame.Value)
+        {
+            await Clients.Caller.SendAsync("Error", "Max players per round cannot exceed max players per game");
+            return;
+        }
+
+        // Deserialize categories from JSON
+        List<Category> categories;
+        try
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(categoriesData);
+            categories = System.Text.Json.JsonSerializer.Deserialize<List<Category>>(json) ?? new List<Category>();
+        }
+        catch (Exception ex)
+        {
+            await Clients.Caller.SendAsync("Error", $"Error parsing categories: {ex.Message}");
+            return;
+        }
+
+        if (categories.Count == 0)
+        {
+            await Clients.Caller.SendAsync("Error", "No categories provided");
+            return;
+        }
+
+        var behavior = (CorrectGuesserBehavior)correctGuesserBehavior;
+        var game = _gameManager.CreateGame(gameName, Context.ConnectionId, categories, 
+            maxPlayersPerRound, maxPlayersPerGame, behavior, correctGuesserChooses);
+        await Clients.Caller.SendAsync("GameCreated", game.GameId, game.Categories);
+        await Groups.AddToGroupAsync(Context.ConnectionId, game.GameId);
+    }
+
     public async Task JoinGame(string gameId, string playerName)
     {
         var game = _gameManager.GetGame(gameId);
