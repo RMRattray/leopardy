@@ -46,7 +46,7 @@ function initializeSignalR() {
         document.getElementById('playerNameDisplay').textContent = playerName;
     });
 
-    connection.on("GameStarted", (selectedPlayerName) => {
+    connection.on("GameStarted", (selectedPlayerName, playersInRound, currentRound) => {
         document.getElementById('waitScreen').classList.add('d-none');
         document.getElementById('gameView').classList.remove('d-none');
         canSelect = (selectedPlayerName === playerName);
@@ -54,6 +54,12 @@ function initializeSignalR() {
         else  document.getElementById('selectTurn').classList.add('d-none');
 
         buildBoard();
+    })
+
+    connection.on("RoundStarted", (round, playersInRound, firstPlayerName) => {
+        canSelect = (firstPlayerName === playerName);
+        if (canSelect) document.getElementById('selectTurn').classList.remove('d-none');
+        else  document.getElementById('selectTurn').classList.add('d-none');
     })
 
     connection.on("PlayerSelected", (selectedPlayerName) => {
@@ -90,10 +96,20 @@ function initializeSignalR() {
         // Could show that an answer was submitted
     });
 
-    connection.on("AnswerJudged", (isCorrect, players, clueKey) => {
+    connection.on("AnswerJudged", (isCorrect, players, clueKey, playersInRound) => {
         clueAnswered[clueKey] = true;
         updateScore(players);
         updateBoard();
+        
+        // Check if player is still in round
+        if (playersInRound && playersInRound.length > 0) {
+            const playerInRound = playersInRound.find(p => (p.name || p.Name) === playerName);
+            if (!playerInRound) {
+                // Player is not in current round
+                document.getElementById('selectTurn').classList.add('d-none');
+                canSelect = false;
+            }
+        }
         
         // Reset for next clue
         setTimeout(() => {

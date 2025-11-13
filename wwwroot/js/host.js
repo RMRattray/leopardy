@@ -24,11 +24,12 @@ function initializeSignalR() {
         clueAnswered = {};
         
         document.getElementById('gameCode').textContent = gameCode;
+        document.getElementById('viewLink').href = `/View?gameId=${gameCode}`;
         document.getElementById('gameSelection').classList.add('d-none');
         document.getElementById('gameLobby').classList.remove('d-none');
     });
 
-    connection.on("GameStarted", (playerName) => {
+    connection.on("GameStarted", (playerName, playersInRound, currentRound) => {
         document.getElementById('gameLobby').classList.add('d-none');
         document.getElementById('gameBoard').classList.remove('d-none');
 
@@ -64,8 +65,14 @@ function initializeSignalR() {
         }
     });
 
+    connection.on("ShowCorrectAnswer", (answer) => {
+        // Show correct answer to host when judging
+        document.getElementById('correctAnswerText').textContent = answer;
+        document.getElementById('correctAnswerArea').classList.remove('d-none');
+    });
+
     connection.on("ShowAnswer", (answer) => {
-        // Could show the answer to the host
+        // Show answer to all players when correct
         console.log("Correct answer:", answer);
     });
 
@@ -89,7 +96,22 @@ function createGame() {
         return;
     }
     
-    connection.invoke("CreateGame", "Jeopardy Game", template);
+    const maxPlayersPerRoundInput = document.getElementById('maxPlayersPerRound').value;
+    const maxPlayersPerRound = maxPlayersPerRoundInput ? parseInt(maxPlayersPerRoundInput) : null;
+    
+    const maxPlayersPerGameInput = document.getElementById('maxPlayersPerGame').value;
+    const maxPlayersPerGame = maxPlayersPerGameInput ? parseInt(maxPlayersPerGameInput) : null;
+    
+    // Validate constraints
+    if (maxPlayersPerGame !== null && maxPlayersPerRound !== null && maxPlayersPerRound > maxPlayersPerGame) {
+        alert('Max players per round cannot exceed max players per game');
+        return;
+    }
+    
+    const correctGuesserBehavior = parseInt(document.getElementById('correctGuesserBehavior').value);
+    const correctGuesserChooses = document.getElementById('correctGuesserChooses').checked;
+    
+    connection.invoke("CreateGame", "Jeopardy Game", template, maxPlayersPerRound, maxPlayersPerGame, correctGuesserBehavior, correctGuesserChooses);
 }
 
 function startGame() {
@@ -174,6 +196,7 @@ function showClue(question, categoryName, value) {
 function showBuzzedIn(playerName) {
     document.getElementById('buzzedPlayerName').textContent = `${playerName} buzzed in!`;
     document.getElementById('playerAnswer').textContent = 'Waiting for answer...';
+    document.getElementById('correctAnswerArea').classList.add('d-none');
     document.getElementById('buzzedInArea').classList.remove('d-none');
 }
 

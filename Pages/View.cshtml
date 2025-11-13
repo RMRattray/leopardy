@@ -1,0 +1,76 @@
+@page
+@model Leopardy.Pages.ViewModel
+@{
+    ViewData["Title"] = "Game View";
+}
+
+<div class="container-fluid">
+    <div id="waitingScreen" class="text-center mt-5">
+        <h2>Waiting for game to start...</h2>
+        <p>Game ID: <span id="gameIdDisplay"></span></p>
+    </div>
+
+    <div id="gameView" class="d-none">
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <h2 class="text-center">Round <span id="currentRound">1</span></h2>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Players in Current Round</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="playersInRound" class="list-group"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div id="currentClueArea" class="d-none">
+                    <div class="card bg-dark text-white mb-3">
+                        <div class="card-body">
+                            <h4 id="currentCategory" class="card-title"></h4>
+                            <h5 id="currentValue" class="card-subtitle mb-3"></h5>
+                            <p id="currentQuestion" class="card-text fs-4"></p>
+                        </div>
+                    </div>
+                    <div id="buzzInsArea" class="mb-3">
+                        <h5>Buzz-ins:</h5>
+                        <div id="buzzInsList" class="list-group"></div>
+                    </div>
+                    <div id="answersArea" class="mb-3 d-none">
+                        <h5>Answers:</h5>
+                        <div id="answersList" class="list-group"></div>
+                    </div>
+                </div>
+                <div id="playerChooserArea" class="d-none">
+                    <div class="alert alert-info">
+                        <h5 id="chooserPlayerName"></h5>
+                        <p>This player should choose a clue</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="jeopardyBoard" class="table-responsive">
+            <table class="table table-bordered text-center" style="background-color: #060CE9;">
+                <thead>
+                    <tr id="categoryRow"></tr>
+                </thead>
+                <tbody id="cluesBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/view.js"></script>
+
+@section Scripts {
+    <script>
+        // SignalR will be loaded here
+    </script>
+}
+

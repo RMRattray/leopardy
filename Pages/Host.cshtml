@@ -8,15 +8,50 @@
     <div id="gameSelection" class="text-center mt-5">
         <h1 class="mb-4">Host a Jeopardy! Game</h1>
         <div class="row justify-content-center">
-            <div class="col-md-6">
+            <div class="col-md-8">
                 <div class="card">
                     <div class="card-body">
-                        <h3 class="card-title mb-3">Select a Game Template</h3>
-                        <select id="gameTemplate" class="form-select form-select-lg mb-3">
-                            <option value="">-- Select a game --</option>
-                            <option value="Science & Technology">Science & Technology</option>
-                            <option value="History & Geography">History & Geography</option>
-                        </select>
+                        <h3 class="card-title mb-3">Game Setup</h3>
+                        <div class="mb-3">
+                            <label for="gameTemplate" class="form-label">Select a Game Template</label>
+                            <select id="gameTemplate" class="form-select form-select-lg">
+                                <option value="">-- Select a game --</option>
+                                <option value="Science & Technology">Science & Technology</option>
+                                <option value="History & Geography">History & Geography</option>
+                            </select>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="maxPlayersPerRound" class="form-label">Max Players Per Round</label>
+                                <input type="number" id="maxPlayersPerRound" class="form-control" min="1" placeholder="Leave empty for infinite">
+                                <small class="form-text text-muted">Leave empty for unlimited</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="maxPlayersPerGame" class="form-label">Max Players Per Game</label>
+                                <input type="number" id="maxPlayersPerGame" class="form-control" min="1" placeholder="Leave empty for infinite">
+                                <small class="form-text text-muted">Leave empty for unlimited</small>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="correctGuesserBehavior" class="form-label">Correct Guesser Behavior</label>
+                            <select id="correctGuesserBehavior" class="form-select">
+                                <option value="0">Stay in round</option>
+                                <option value="1">Leave round after correct guess</option>
+                                <option value="2">Never stay in round (always leave)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="correctGuesserChooses" checked>
+                                <label class="form-check-label" for="correctGuesserChooses">
+                                    Correct guesser chooses next clue (if they stay)
+                                </label>
+                            </div>
+                        </div>
+                        
                         <button id="createGameBtn" class="btn btn-primary btn-lg">Create Game</button>
                     </div>
                 </div>
@@ -29,7 +64,10 @@
             <h2>Game Code</h2>
             <h1 id="gameCode" class="display-1 text-primary" style="font-family: 'Courier New', monospace; font-weight: bold;">----</h1>
             <p class="lead">Share this code with players to join the game</p>
-            <button id="startGameBtn">Start game</button>
+            <div class="mb-3">
+                <a href="/View?gameId=" id="viewLink" class="btn btn-info me-2" target="_blank">Open View Page</a>
+                <button id="startGameBtn" class="btn btn-success">Start game</button>
+            </div>
         </div>
     </div>
 
@@ -52,6 +90,11 @@
                         <div class="alert alert-info">
                             <h5 id="buzzedPlayerName"></h5>
                             <p id="playerAnswer" class="fs-5"></p>
+                            <div id="correctAnswerArea" class="mb-3 d-none">
+                                <div class="alert alert-success">
+                                    <strong>Correct Answer:</strong> <span id="correctAnswerText"></span>
+                                </div>
+                            </div>
                             <div>
                                 <button id="markCorrect" class="btn btn-success me-2">Correct</button>
                                 <button id="markIncorrect" class="btn btn-danger">Incorrect</button>

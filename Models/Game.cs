@@ -1,5 +1,12 @@
 namespace Leopardy.Models;
 
+public enum CorrectGuesserBehavior
+{
+    Stay,
+    Leave,
+    Never
+}
+
 public class Game
 {
     public string GameId { get; set; } = string.Empty;
@@ -17,6 +24,17 @@ public class Game
     public bool WaitingForAnswer { get; set; }
     public DateTime? BuzzTime { get; set; }
     public Dictionary<string, bool> ClueAnswered { get; set; } = new();
+    
+    // Game setup rules
+    public int? MaxPlayersPerRound { get; set; } // null = infinite
+    public int? MaxPlayersPerGame { get; set; } // null = infinite
+    public CorrectGuesserBehavior CorrectGuesserBehavior { get; set; } = CorrectGuesserBehavior.Stay;
+    public bool CorrectGuesserChooses { get; set; } = true;
+    
+    // Round tracking
+    public int CurrentRound { get; set; } = 1;
+    public List<Player> PlayersInCurrentRound { get; set; } = new();
+    public List<Player> PlayersWaitingForRound { get; set; } = new();
 }
 
 public class Player

@@ -13,7 +13,8 @@ public class GameHub : Hub
         _gameManager = gameManager;
     }
 
-    public async Task CreateGame(string gameName, string templateName)
+    public async Task CreateGame(string gameName, string templateName, int? maxPlayersPerRound, int? maxPlayersPerGame, 
+        int correctGuesserBehavior, bool correctGuesserChooses)
     {
         var templates = GameDataService.GetGameTemplates();
         var template = templates.FirstOrDefault(t => t.Name == templateName);
@@ -24,21 +25,22 @@ public class GameHub : Hub
             return;
         }
 
-        var game = _gameManager.CreateGame(gameName, Context.ConnectionId, template.Categories);
+        // Validate max players constraints
+        if (maxPlayersPerGame.HasValue && maxPlayersPerRound.HasValue && maxPlayersPerRound.Value > maxPlayersPerGame.Value)
+        {
+            await Clients.Caller.SendAsync("Error", "Max players per round cannot exceed max players per game");
+            return;
+        }
+
+        var behavior = (CorrectGuesserBehavior)correctGuesserBehavior;
+        var game = _gameManager.CreateGame(gameName, Context.ConnectionId, template.Categories, 
+            maxPlayersPerRound, maxPlayersPerGame, behavior, correctGuesserChooses);
         await Clients.Caller.SendAsync("GameCreated", game.GameId, game.Categories);
         await Groups.AddToGroupAsync(Context.ConnectionId, game.GameId);
     }
 
     public async Task JoinGame(string gameId, string playerName)
     {
-        var success = _gameManager.JoinGame(gameId, Context.ConnectionId, playerName);
-        
-        if (!success)
-        {
-            await Clients.Caller.SendAsync("Error", "Failed to join game");
-            return;
-        }
-
         var game = _gameManager.GetGame(gameId);
         if (game == null)
         {
@@ -46,9 +48,38 @@ public class GameHub : Hub
             return;
         }
 
+        // Allow viewers to join even after game has started
+        bool isViewer = playerName == "Viewer";
+        
+        if (!isViewer)
+        {
+            var success = _gameManager.JoinGame(gameId, Context.ConnectionId, playerName);
+            
+            if (!success)
+            {
+                await Clients.Caller.SendAsync("Error", "Failed to join game");
+                return;
+            }
+            
+            await Clients.Group(gameId).SendAsync("PlayerJoined", game.Players);
+        }
+
         await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
         await Clients.Caller.SendAsync("JoinedGame", game.Categories, game.ClueAnswered);
-        await Clients.Group(gameId).SendAsync("PlayerJoined", game.Players);
+        
+        // If game has started, send current state to viewer
+        if (isViewer && game.Started)
+        {
+            var playerWithControl = game.PlayersInCurrentRound.FirstOrDefault(p => p.HasControl);
+            var firstPlayerName = playerWithControl?.Name ?? (game.PlayersInCurrentRound.Count > 0 ? game.PlayersInCurrentRound[0].Name : "");
+            await Clients.Caller.SendAsync("GameStarted", firstPlayerName, game.PlayersInCurrentRound, game.CurrentRound);
+            
+            // Send current clue if one is active
+            if (game.CurrentClue != null && game.ClueRevealed)
+            {
+                await Clients.Caller.SendAsync("ClueSelected", game.CurrentClue.Question, game.CurrentCategory, game.CurrentValue);
+            }
+        }
     }
 
     public async Task StartGame(string gameId)
@@ -68,13 +99,30 @@ public class GameHub : Hub
             return;
         }
 
-        await Clients.Group(gameId).SendAsync("GameStarted", game.Players[0].Name);
+        var playerWithControl = game.PlayersInCurrentRound.FirstOrDefault(p => p.HasControl);
+        var firstPlayerName = playerWithControl?.Name ?? (game.PlayersInCurrentRound.Count > 0 ? game.PlayersInCurrentRound[0].Name : "");
+        await Clients.Group(gameId).SendAsync("GameStarted", firstPlayerName, game.PlayersInCurrentRound, game.CurrentRound);
     }
 
     public async Task SelectClue(string gameId, string categoryName, int value)
     {
-        _gameManager.SelectClue(gameId, categoryName, value);
         var game = _gameManager.GetGame(gameId);
+        if (game == null)
+        {
+            await Clients.Caller.SendAsync("Error", "Game not found");
+            return;
+        }
+
+        // Check if caller has control
+        var player = game.PlayersInCurrentRound.FirstOrDefault(p => p.ConnectionId == Context.ConnectionId);
+        if (player == null || !player.HasControl)
+        {
+            await Clients.Caller.SendAsync("Error", "You don't have control to select a clue");
+            return;
+        }
+
+        _gameManager.SelectClue(gameId, categoryName, value);
+        game = _gameManager.GetGame(gameId);
         
         if (game?.CurrentClue != null)
         {
@@ -123,13 +171,23 @@ public class GameHub : Hub
         
         if (game != null && clueKey != null)
         {
+            // Send correct answer to host
+            if (correctAnswer != null)
+            {
+                await Clients.Client(game.HostConnectionId).SendAsync("ShowCorrectAnswer", correctAnswer);
+            }
+
             if (isCorrect && correctAnswer != null)
             {
                 await Clients.Group(gameId).SendAsync("ShowAnswer", correctAnswer);
-                await Clients.Group(gameId).SendAsync("PlayerSelected", game.CurrentPlayer.Name);
+                var playerWithControl = game.PlayersInCurrentRound.FirstOrDefault(p => p.HasControl);
+                if (playerWithControl != null)
+                {
+                    await Clients.Group(gameId).SendAsync("PlayerSelected", playerWithControl.Name);
+                }
             }
 
-            await Clients.Group(gameId).SendAsync("AnswerJudged", isCorrect, game.Players, clueKey);
+            await Clients.Group(gameId).SendAsync("AnswerJudged", isCorrect, game.Players, clueKey, game.PlayersInCurrentRound);
             
             // Reset clue after a delay
             _gameManager.ResetClue(gameId);
@@ -140,6 +198,19 @@ public class GameHub : Hub
     {
         _gameManager.ResetClue(gameId);
         await Clients.Group(gameId).SendAsync("ClueReset");
+    }
+
+    public async Task StartNewRound(string gameId)
+    {
+        _gameManager.StartNewRound(gameId);
+        var game = _gameManager.GetGame(gameId);
+        
+        if (game != null)
+        {
+            var playerWithControl = game.PlayersInCurrentRound.FirstOrDefault(p => p.HasControl);
+            var firstPlayerName = playerWithControl?.Name ?? (game.PlayersInCurrentRound.Count > 0 ? game.PlayersInCurrentRound[0].Name : "");
+            await Clients.Group(gameId).SendAsync("RoundStarted", game.CurrentRound, game.PlayersInCurrentRound, firstPlayerName);
+        }
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
