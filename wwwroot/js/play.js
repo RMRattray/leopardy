@@ -8,6 +8,7 @@ let timeRemaining = 5;
 let canSelect = false;
 let canBuzz = false;
 let hasBuzzedIn = false;
+let waitingPlayers = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeSignalR();
@@ -46,20 +47,24 @@ function initializeSignalR() {
         document.getElementById('playerNameDisplay').textContent = playerName;
     });
 
-    connection.on("GameStarted", (selectedPlayerName, playersInRound, currentRound) => {
+    connection.on("GameStarted", (selectedPlayerName, playersInRound, currentRound, playersWaiting) => {
+        waitingPlayers = playersWaiting || [];
         document.getElementById('waitScreen').classList.add('d-none');
         document.getElementById('gameView').classList.remove('d-none');
         canSelect = (selectedPlayerName === playerName);
         if (canSelect) document.getElementById('selectTurn').classList.remove('d-none');
         else  document.getElementById('selectTurn').classList.add('d-none');
 
+        updateWaitingPlayers();
         buildBoard();
     })
 
-    connection.on("RoundStarted", (round, playersInRound, firstPlayerName) => {
+    connection.on("RoundStarted", (round, playersInRound, firstPlayerName, playersWaiting) => {
+        waitingPlayers = playersWaiting || [];
         canSelect = (firstPlayerName === playerName);
         if (canSelect) document.getElementById('selectTurn').classList.remove('d-none');
         else  document.getElementById('selectTurn').classList.add('d-none');
+        updateWaitingPlayers();
     })
 
     connection.on("PlayerSelected", (selectedPlayerName) => {
@@ -96,10 +101,12 @@ function initializeSignalR() {
         // Could show that an answer was submitted
     });
 
-    connection.on("AnswerJudged", (isCorrect, players, clueKey, playersInRound) => {
+    connection.on("AnswerJudged", (isCorrect, players, clueKey, playersInRound, playersWaiting) => {
+        waitingPlayers = playersWaiting || [];
         clueAnswered[clueKey] = true;
         updateScore(players);
         updateBoard();
+        updateWaitingPlayers();
         
         // Check if player is still in round
         if (playersInRound && playersInRound.length > 0) {
@@ -296,5 +303,29 @@ function submitAnswer() {
     connection.invoke("SubmitAnswer", gameId, answer);
     document.getElementById('answerInput').value = '';
     document.getElementById('answerArea').classList.add('d-none');
+}
+
+function updateWaitingPlayers() {
+    const waitingPlayersList = document.getElementById('waitingPlayers');
+    if (!waitingPlayersList) return;
+    
+    waitingPlayersList.innerHTML = '';
+    
+    if (waitingPlayers.length === 0) {
+        waitingPlayersList.innerHTML = '<div class="list-group-item text-muted">No players waiting</div>';
+        return;
+    }
+    
+    waitingPlayers.forEach((player, index) => {
+        const li = document.createElement('div');
+        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+        const playerName = player.name || player.Name || 'Unknown';
+        const isUpNext = index === 0;
+        
+        li.innerHTML = `
+            <span>${isUpNext ? '<span class="badge bg-warning text-dark me-2">Up Next</span>' : ''}${playerName}</span>
+        `;
+        waitingPlayersList.appendChild(li);
+    });
 }
 

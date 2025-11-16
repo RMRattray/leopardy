@@ -3,6 +3,7 @@ let gameId;
 let categories = [];
 let clueAnswered = {};
 let playersInRound = [];
+let waitingPlayers = [];
 let currentRound = 1;
 let buzzIns = [];
 let answers = [];
@@ -27,13 +28,15 @@ function initializeSignalR() {
         .withUrl("/gameHub")
         .build();
 
-    connection.on("GameStarted", (playerName, playersInCurrentRound, round) => {
+    connection.on("GameStarted", (playerName, playersInCurrentRound, round, playersWaiting) => {
         playersInRound = playersInCurrentRound || [];
+        waitingPlayers = playersWaiting || [];
         currentRound = round || 1;
         document.getElementById('waitingScreen').classList.add('d-none');
         document.getElementById('gameView').classList.remove('d-none');
         document.getElementById('currentRound').textContent = currentRound;
         updatePlayersInRound();
+        updateWaitingPlayers();
         if (categories.length > 0) {
             buildBoard();
         }
@@ -44,11 +47,13 @@ function initializeSignalR() {
         // Update players list if needed
     });
 
-    connection.on("RoundStarted", (round, playersInCurrentRound, firstPlayerName) => {
+    connection.on("RoundStarted", (round, playersInCurrentRound, firstPlayerName, playersWaiting) => {
         playersInRound = playersInCurrentRound || [];
+        waitingPlayers = playersWaiting || [];
         currentRound = round || 1;
         document.getElementById('currentRound').textContent = currentRound;
         updatePlayersInRound();
+        updateWaitingPlayers();
         updateChooser();
     });
 
@@ -73,10 +78,12 @@ function initializeSignalR() {
         }
     });
 
-    connection.on("AnswerJudged", (isCorrect, players, clueKey, playersInCurrentRound) => {
+    connection.on("AnswerJudged", (isCorrect, players, clueKey, playersInCurrentRound, playersWaiting) => {
         playersInRound = playersInCurrentRound || [];
+        waitingPlayers = playersWaiting || [];
         clueAnswered[clueKey] = true;
         updatePlayersInRound();
+        updateWaitingPlayers();
         updateBoard();
         updateChooser();
         
@@ -265,6 +272,32 @@ function updateAnswers() {
         li.className = 'list-group-item';
         li.innerHTML = `<strong>${answer.name}:</strong> ${answer.answer}`;
         answersList.appendChild(li);
+    });
+}
+
+function updateWaitingPlayers() {
+    const waitingPlayersList = document.getElementById('waitingPlayers');
+    if (!waitingPlayersList) return;
+    
+    waitingPlayersList.innerHTML = '';
+    
+    if (waitingPlayers.length === 0) {
+        waitingPlayersList.innerHTML = '<div class="list-group-item text-muted">No players waiting</div>';
+        return;
+    }
+    
+    waitingPlayers.forEach((player, index) => {
+        const li = document.createElement('div');
+        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+        const playerName = player.name || player.Name || 'Unknown';
+        const playerScore = player.score || player.Score || 0;
+        const isUpNext = index === 0;
+        
+        li.innerHTML = `
+            <span>${isUpNext ? '<span class="badge bg-warning text-dark me-2">Up Next</span>' : ''}${playerName}</span>
+            <span class="badge bg-secondary rounded-pill">$${playerScore}</span>
+        `;
+        waitingPlayersList.appendChild(li);
     });
 }
 

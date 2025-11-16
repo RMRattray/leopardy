@@ -108,7 +108,7 @@ public class GameHub : Hub
         {
             var playerWithControl = game.PlayersInCurrentRound.FirstOrDefault(p => p.HasControl);
             var firstPlayerName = playerWithControl?.Name ?? (game.PlayersInCurrentRound.Count > 0 ? game.PlayersInCurrentRound[0].Name : "");
-            await Clients.Caller.SendAsync("GameStarted", firstPlayerName, game.PlayersInCurrentRound, game.CurrentRound);
+            await Clients.Caller.SendAsync("GameStarted", firstPlayerName, game.PlayersInCurrentRound, game.CurrentRound, game.PlayersWaitingForRound);
             
             // Send current clue if one is active
             if (game.CurrentClue != null && game.ClueRevealed)
@@ -137,7 +137,7 @@ public class GameHub : Hub
 
         var playerWithControl = game.PlayersInCurrentRound.FirstOrDefault(p => p.HasControl);
         var firstPlayerName = playerWithControl?.Name ?? (game.PlayersInCurrentRound.Count > 0 ? game.PlayersInCurrentRound[0].Name : "");
-        await Clients.Group(gameId).SendAsync("GameStarted", firstPlayerName, game.PlayersInCurrentRound, game.CurrentRound);
+        await Clients.Group(gameId).SendAsync("GameStarted", firstPlayerName, game.PlayersInCurrentRound, game.CurrentRound, game.PlayersWaitingForRound);
     }
 
     public async Task SelectClue(string gameId, string categoryName, int value)
@@ -223,7 +223,7 @@ public class GameHub : Hub
                 }
             }
 
-            await Clients.Group(gameId).SendAsync("AnswerJudged", isCorrect, game.Players, clueKey, game.PlayersInCurrentRound);
+            await Clients.Group(gameId).SendAsync("AnswerJudged", isCorrect, game.Players, clueKey, game.PlayersInCurrentRound, game.PlayersWaitingForRound);
             
             // Reset clue after a delay
             _gameManager.ResetClue(gameId);
@@ -245,7 +245,7 @@ public class GameHub : Hub
         {
             var playerWithControl = game.PlayersInCurrentRound.FirstOrDefault(p => p.HasControl);
             var firstPlayerName = playerWithControl?.Name ?? (game.PlayersInCurrentRound.Count > 0 ? game.PlayersInCurrentRound[0].Name : "");
-            await Clients.Group(gameId).SendAsync("RoundStarted", game.CurrentRound, game.PlayersInCurrentRound, firstPlayerName);
+            await Clients.Group(gameId).SendAsync("RoundStarted", game.CurrentRound, game.PlayersInCurrentRound, firstPlayerName, game.PlayersWaitingForRound);
         }
     }
 
