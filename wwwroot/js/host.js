@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('markIncorrect').addEventListener('click', () => judgeAnswer(false));
     document.getElementById('closeClueBtn').addEventListener('click', closeClue);
     document.getElementById('savedGameSelect').addEventListener('change', handleSavedGameSelect);
+    document.getElementById('correctGuesserBehavior').addEventListener('change', handleCorrectGuesserChange);
 });
 
 function initializeSignalR() {
@@ -187,6 +188,19 @@ function handleCsvUpload(event) {
         });
     };
     reader.readAsText(file);
+}
+
+// Options for who selects clues depends on what happens to correct guessers
+function handleCorrectGuesserChange(event) {
+    switch (event.target.value) {
+        case "0":
+            document.getElementById("correctGuesserChoosesDiv").classList.remove("d-none");
+            break;
+    
+        default:
+            document.getElementById("correctGuesserChoosesDiv").classList.add("d-none");
+            break;
+    }
 }
 
 function createGame() {

@@ -73,17 +73,17 @@
                         <div class="mb-3">
                             <label for="correctGuesserBehavior" class="form-label">Correct Guesser Behavior</label>
                             <select id="correctGuesserBehavior" class="form-select">
-                                <option value="0">Stay in round</option>
-                                <option value="1">Leave round after correct guess</option>
-                                <option value="2">Never stay in round (always leave)</option>
+                                <option value="0">Correct guesser stays</option>
+                                <option value="1">Correct guesser leaves</option>
+                                <option value="2">All-new players every round</option>
                             </select>
                         </div>
                         
-                        <div class="mb-3">
+                        <div class="mb-3" id="correctGuesserChoosesDiv">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="correctGuesserChooses" checked>
                                 <label class="form-check-label" for="correctGuesserChooses">
-                                    Correct guesser chooses next clue (if they stay)
+                                    Correct guesser chooses next clue
                                 </label>
                             </div>
                         </div>
