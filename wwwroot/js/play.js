@@ -47,24 +47,33 @@ function initializeSignalR() {
         document.getElementById('playerNameDisplay').textContent = playerName;
     });
 
-    connection.on("GameStarted", (selectedPlayerName, playersInRound, currentRound, playersWaiting) => {
+    connection.on("GameStarted", (playersWaiting) => {
         waitingPlayers = playersWaiting || [];
         document.getElementById('waitScreen').classList.add('d-none');
         document.getElementById('gameView').classList.remove('d-none');
-        canSelect = (selectedPlayerName === playerName);
-        if (canSelect) document.getElementById('selectTurn').classList.remove('d-none');
-        else  document.getElementById('selectTurn').classList.add('d-none');
 
         updateWaitingPlayers();
         buildBoard();
     })
 
-    connection.on("RoundStarted", (round, playersInRound, firstPlayerName, playersWaiting) => {
+    connection.on("RoundStarted", (isInControl, isInRound, playersWaiting) => {
         waitingPlayers = playersWaiting || [];
-        canSelect = (firstPlayerName === playerName);
-        if (canSelect) document.getElementById('selectTurn').classList.remove('d-none');
+        canSelect = isInControl;
+
+        if (isInControl) document.getElementById('selectTurn').classList.remove('d-none');
         else  document.getElementById('selectTurn').classList.add('d-none');
+
+        if (isInRound) {
+            document.getElementById('clueView').classList.remove('d-none');
+            document.getElementById('boardView').classList.remove('d-none');
+        }
+        else {
+            document.getElementById('clueView').classList.add('d-none');
+            document.getElementById('boardView').classList.add('d-none');
+        }
+
         updateWaitingPlayers();
+        buildBoard();
     })
 
     connection.on("PlayerSelected", (selectedPlayerName) => {

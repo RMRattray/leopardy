@@ -135,9 +135,8 @@ public class GameHub : Hub
             return;
         }
 
-        var playerWithControl = game.PlayersInCurrentRound.FirstOrDefault(p => p.HasControl);
-        var firstPlayerName = playerWithControl?.Name ?? (game.PlayersInCurrentRound.Count > 0 ? game.PlayersInCurrentRound[0].Name : "");
-        await Clients.Group(gameId).SendAsync("GameStarted", firstPlayerName, game.PlayersInCurrentRound, game.CurrentRound, game.PlayersWaitingForRound);
+        await Clients.Group(gameId).SendAsync("GameStarted", game.PlayersWaitingForRound);
+        await StartNewRound(gameId);
     }
 
     public async Task SelectClue(string gameId, string categoryName, int value)
@@ -244,8 +243,12 @@ public class GameHub : Hub
         if (game != null)
         {
             var playerWithControl = game.PlayersInCurrentRound.FirstOrDefault(p => p.HasControl);
-            var firstPlayerName = playerWithControl?.Name ?? (game.PlayersInCurrentRound.Count > 0 ? game.PlayersInCurrentRound[0].Name : "");
-            await Clients.Group(gameId).SendAsync("RoundStarted", game.CurrentRound, game.PlayersInCurrentRound, firstPlayerName, game.PlayersWaitingForRound);
+            foreach (Player p in game.PlayersInCurrentRound) {
+                await Clients.Client(p.ConnectionId).SendAsync("RoundStarted", p.HasControl, true, game.PlayersWaitingForRound);
+            }
+            foreach (Player p in game.PlayersWaitingForRound) {
+                await Clients.Client(p.ConnectionId).SendAsync("RoundStarted", false, false, game.PlayersWaitingForRound);
+            }
         }
     }
 

@@ -72,28 +72,27 @@ public class GameManager
             if (game.Started) return false;
 
             game.Started = true;
-            InitializeRound(game);
+            
+            // Initial distribution of players in round
+            int i = 0;
+            while ((!game.MaxPlayersPerRound.HasValue || i < game.MaxPlayersPerRound) && i < game.Players.Count) {
+                game.PlayersInCurrentRound.Add(game.Players[i]);
+                ++i;
+            }
+            while (i < game.Players.Count) {
+                game.PlayersWaitingForRound.Add(game.Players[i]);
+                ++i;
+            }
+
+            game.PlayersInCurrentRound[0].HasControl = true;
         }
 
         return true;
     }
 
-    private void InitializeRound(Game game)
+    // Set who is in the next round, drawing from pool of players
+    private void InitializeRound(Game game, Player? winner)
     {
-        // Shuffle all players
-        var shuffledPlayers = game.Players.OrderBy(x => Random.Shared.Next()).ToList();
-        
-        // Select players for this round
-        if (game.MaxPlayersPerRound.HasValue)
-        {
-            game.PlayersInCurrentRound = shuffledPlayers.Take(game.MaxPlayersPerRound.Value).ToList();
-            game.PlayersWaitingForRound = shuffledPlayers.Skip(game.MaxPlayersPerRound.Value).ToList();
-        }
-        else
-        {
-            game.PlayersInCurrentRound = shuffledPlayers.ToList();
-            game.PlayersWaitingForRound = new List<Player>();
-        }
 
         // Reset control for all players
         foreach (var player in game.Players)
@@ -101,8 +100,54 @@ public class GameManager
             player.HasControl = false;
         }
 
+        // Only necessary if players in a round is capped at fewer than total players
+        if (game.MaxPlayersPerRound.HasValue && game.Players.Count < game.MaxPlayersPerRound) {
+            switch (game.CorrectGuesserBehavior) {
+
+                // In "never" behavior, remove everyone from that round and start from the top of the list
+                case CorrectGuesserBehavior.Never:
+                    foreach (Player p in game.PlayersInCurrentRound) {
+                        game.PlayersWaitingForRound.Add(p);
+                    }
+                    game.PlayersInCurrentRound = [];
+                    for (int i = 0; i < game.MaxPlayersPerRound; ++i) {
+                        game.PlayersInCurrentRound.Add(game.PlayersWaitingForRound[0]);
+                        game.PlayersWaitingForRound.Remove(game.PlayersWaitingForRound[0]);
+                    }
+                break;
+
+                // In "leave" behavior, remove the correct guesser only
+                case CorrectGuesserBehavior.Leave:
+                    if (winner != null) {
+                        game.PlayersWaitingForRound.Add(winner);
+                        game.PlayersInCurrentRound.Remove(winner);
+                        game.PlayersInCurrentRound.Add(game.PlayersWaitingForRound[0]);
+                        game.PlayersWaitingForRound.Remove(game.PlayersWaitingForRound[0]);
+                    }
+                break;
+
+                // In "stay" behavior, remove incorrect guessers
+                case CorrectGuesserBehavior.Stay:
+                    foreach (Player p in game.PlayersInCurrentRound) {
+                        if (p != winner) {
+                            game.PlayersWaitingForRound.Add(p);
+                        }
+                    }
+                    game.PlayersInCurrentRound = (winner != null) ? [ winner ] : [];
+                    while (game.PlayersInCurrentRound.Count < game.MaxPlayersPerRound) {
+                        game.PlayersInCurrentRound.Add(game.PlayersWaitingForRound[0]);
+                        game.PlayersWaitingForRound.Remove(game.PlayersWaitingForRound[0]);
+                    }
+
+                break;
+            }
+        }
+
         // First player in round gets control
-        if (game.PlayersInCurrentRound.Count > 0)
+        if (winner != null && game.CorrectGuesserChooses) {
+            winner.HasControl = true;
+        }
+        else
         {
             game.PlayersInCurrentRound[0].HasControl = true;
         }
@@ -116,7 +161,6 @@ public class GameManager
         lock (_lock)
         {
             game.CurrentRound++;
-            InitializeRound(game);
         }
     }
 
@@ -228,77 +272,14 @@ public class GameManager
         {
             correctGuesser.Score += value;
             
-            // Handle correct guesser behavior
-            if (game.CorrectGuesserBehavior == CorrectGuesserBehavior.Never)
-            {
-                // Remove from round
-                game.PlayersInCurrentRound.Remove(correctGuesser);
-                game.PlayersWaitingForRound.Add(correctGuesser);
-                correctGuesser.HasControl = false;
-                
-                // Give control to first player in round
-                if (game.PlayersInCurrentRound.Count > 0)
-                {
-                    game.PlayersInCurrentRound[0].HasControl = true;
-                }
-            }
-            else if (game.CorrectGuesserBehavior == CorrectGuesserBehavior.Leave)
-            {
-                // Remove from round
-                game.PlayersInCurrentRound.Remove(correctGuesser);
-                game.PlayersWaitingForRound.Add(correctGuesser);
-                correctGuesser.HasControl = false;
-                
-                // Give control based on CorrectGuesserChooses setting
-                if (game.CorrectGuesserChooses)
-                {
-                    // Correct guesser chooses who gets control (first new player)
-                    if (game.PlayersInCurrentRound.Count > 0)
-                    {
-                        game.PlayersInCurrentRound[0].HasControl = true;
-                    }
-                }
-                else
-                {
-                    // First new player gets control
-                    if (game.PlayersInCurrentRound.Count > 0)
-                    {
-                        game.PlayersInCurrentRound[0].HasControl = true;
-                    }
-                }
-            }
-            else // Stay
-            {
-                // Keep in round and give control
-                correctGuesser.HasControl = true;
-                // Reset other players' control
-                foreach (var player in game.PlayersInCurrentRound.Where(p => p.ConnectionId != correctGuesser.ConnectionId))
-                {
-                    player.HasControl = false;
-                }
-            }
+            InitializeRound(game, correctGuesser);
+
         }
         else
         {
             correctGuesser.Score -= value;
-            correctGuesser.HasControl = false;
             
-            // If incorrect, control goes to first player in round (if any)
-            // The next player in the round gets control
-            if (game.PlayersInCurrentRound.Count > 0)
-            {
-                var currentIndex = game.PlayersInCurrentRound.FindIndex(p => p.ConnectionId == correctGuesser.ConnectionId);
-                if (currentIndex >= 0 && currentIndex < game.PlayersInCurrentRound.Count - 1)
-                {
-                    // Give control to next player
-                    game.PlayersInCurrentRound[currentIndex + 1].HasControl = true;
-                }
-                else if (game.PlayersInCurrentRound.Count > 0)
-                {
-                    // Wrap around to first player
-                    game.PlayersInCurrentRound[0].HasControl = true;
-                }
-            }
+            InitializeRound(game, null);
         }
 
         game.ClueAnswered[clueKey] = true;
