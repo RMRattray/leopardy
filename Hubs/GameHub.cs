@@ -98,9 +98,13 @@ public class GameHub : Hub
             }
             
             await Clients.Group(gameId).SendAsync("PlayerJoined", game.Players);
-        }
 
-        await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
+            await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
+        }
+        else {
+            await Groups.AddToGroupAsync(Context.ConnectionId, gameId + "_viewers");
+        }
+        
         await Clients.Caller.SendAsync("JoinedGame", game.Categories, game.ClueAnswered);
         
         // If game has started, send current state to viewer
@@ -206,38 +210,17 @@ public class GameHub : Hub
         
         if (game != null && clueKey != null)
         {
-            // Send correct answer to host
-            if (correctAnswer != null)
-            {
-                await Clients.Client(game.HostConnectionId).SendAsync("ShowCorrectAnswer", correctAnswer);
-            }
-
-            if (isCorrect && correctAnswer != null)
-            {
-                await Clients.Group(gameId).SendAsync("ShowAnswer", correctAnswer);
-                var playerWithControl = game.PlayersInCurrentRound.FirstOrDefault(p => p.HasControl);
-                if (playerWithControl != null)
-                {
-                    await Clients.Group(gameId).SendAsync("PlayerSelected", playerWithControl.Name);
-                }
-            }
-
             await Clients.Group(gameId).SendAsync("AnswerJudged", isCorrect, game.Players, clueKey, game.PlayersInCurrentRound, game.PlayersWaitingForRound);
             
-            // Reset clue after a delay
-            _gameManager.ResetClue(gameId);
+            if (isCorrect && correctAnswer != null)
+            {
+                await StartNewRound(gameId);
+            }
         }
-    }
-
-    public async Task ResetClue(string gameId)
-    {
-        _gameManager.ResetClue(gameId);
-        await Clients.Group(gameId).SendAsync("ClueReset");
     }
 
     public async Task StartNewRound(string gameId)
     {
-        _gameManager.StartNewRound(gameId);
         var game = _gameManager.GetGame(gameId);
         
         if (game != null)
@@ -249,6 +232,8 @@ public class GameHub : Hub
             foreach (Player p in game.PlayersWaitingForRound) {
                 await Clients.Client(p.ConnectionId).SendAsync("RoundStarted", false, false, game.PlayersWaitingForRound);
             }
+
+            await Clients.Group(gameId + "_viewers").SendAsync("RoundStarted", 0, game.PlayersInCurrentRound, game.PlayersWaitingForRound);
         }
     }
 

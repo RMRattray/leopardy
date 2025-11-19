@@ -38,7 +38,7 @@ function initializeSignalR() {
         .withUrl("/gameHub")
         .build();
 
-    connection.on("JoinedGame", (gameCategories, answered) => {
+    connection.on("JoinedGame", (gameCategories, answered) => { console.log("JoinedGame", gameCategories, answered);
         categories = gameCategories;
         clueAnswered = answered || {};
         
@@ -47,7 +47,7 @@ function initializeSignalR() {
         document.getElementById('playerNameDisplay').textContent = playerName;
     });
 
-    connection.on("GameStarted", (playersWaiting) => {
+    connection.on("GameStarted", (playersWaiting) => { console.log("GameStarted", playersWaiting);
         waitingPlayers = playersWaiting || [];
         document.getElementById('waitScreen').classList.add('d-none');
         document.getElementById('gameView').classList.remove('d-none');
@@ -56,42 +56,44 @@ function initializeSignalR() {
         buildBoard();
     })
 
-    connection.on("RoundStarted", (isInControl, isInRound, playersWaiting) => {
+    connection.on("RoundStarted", (isInControl, isInRound, playersWaiting) => { console.log("RoundStarted", isInControl, isInRound, playersWaiting);
         waitingPlayers = playersWaiting || [];
         canSelect = isInControl;
+        canBuzz = isInRound;
 
-        if (isInControl) document.getElementById('selectTurn').classList.remove('d-none');
-        else  document.getElementById('selectTurn').classList.add('d-none');
-
-        if (isInRound) {
-            document.getElementById('clueView').classList.remove('d-none');
+        if (isInControl) {
+            document.getElementById('selectTurn').classList.remove('d-none');
             document.getElementById('boardView').classList.remove('d-none');
         }
         else {
-            document.getElementById('clueView').classList.add('d-none');
+            document.getElementById('selectTurn').classList.add('d-none');
             document.getElementById('boardView').classList.add('d-none');
+        }
+
+        if (isInRound) {
+            document.getElementById('clueView').classList.remove('d-none');
+        }
+        else {
+            document.getElementById('clueView').classList.add('d-none');
         }
 
         updateWaitingPlayers();
         buildBoard();
     })
 
-    connection.on("PlayerSelected", (selectedPlayerName) => {
-        console.log("Receiving 'playerSelected' with ", selectedPlayerName, "; myplayer name is ", playerName);
-        canSelect = (selectedPlayerName === playerName);
-        if (canSelect) document.getElementById('selectTurn').classList.remove('d-none');
-        else  document.getElementById('selectTurn').classList.add('d-none');
-    })
-
-    connection.on("ClueSelected", (question, categoryName, value) => {
-        showClue(question, categoryName, value);
-        canBuzz = true;
-        hasBuzzedIn = false;
-        document.getElementById('answerArea').classList.add('d-none');
-        document.getElementById('buzzArea').classList.remove('d-none');
+    connection.on("ClueSelected", (question, categoryName, value) => { console.log("ClueSelected", question, categoryName, value);
+        if (canBuzz) {
+            showClue(question, categoryName, value);
+            document.getElementById('answerArea').classList.add('d-none');
+            document.getElementById('buzzArea').classList.remove('d-none');
+        }
+        if (canSelect) {
+            canSelect = false;
+            document.getElementById('boardView').classList.add('d-none');
+        }
     });
 
-    connection.on("PlayerBuzzedIn", (buzzedPlayerName, connectionId) => {
+    connection.on("PlayerBuzzedIn", (buzzedPlayerName, connectionId) => { console.log("PlayerBuzzedIn", buzzedPlayerName, connectionId);
         if (buzzedPlayerName === playerName) {
             // This player buzzed in first
             startAnswerTimer();
@@ -106,11 +108,11 @@ function initializeSignalR() {
         }
     });
 
-    connection.on("AnswerSubmitted", (submittedPlayerName, answer) => {
+    connection.on("AnswerSubmitted", (submittedPlayerName, answer) => { console.log("AnswerSubmitted", submittedPlayerName, answer);
         // Could show that an answer was submitted
     });
 
-    connection.on("AnswerJudged", (isCorrect, players, clueKey, playersInRound, playersWaiting) => {
+    connection.on("AnswerJudged", (isCorrect, players, clueKey, playersInRound, playersWaiting) => { console.log("AnswerJudged", isCorrect, players, clueKey, playersInRound, playersWaiting);
         waitingPlayers = playersWaiting || [];
         clueAnswered[clueKey] = true;
         updateScore(players);
@@ -126,22 +128,9 @@ function initializeSignalR() {
                 canSelect = false;
             }
         }
-        
-        // Reset for next clue
-        setTimeout(() => {
-            hideClue();
-            canBuzz = false;
-            hasBuzzedIn = false;
-        }, 2000);
     });
 
-    connection.on("ClueReset", () => {
-        hideClue();
-        canBuzz = false;
-        hasBuzzedIn = false;
-    });
-
-    connection.on("Error", (message) => {
+    connection.on("Error", (message) => { console.log("Error", message);
         alert("Error: " + message);
     });
 

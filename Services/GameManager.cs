@@ -101,7 +101,7 @@ public class GameManager
         }
 
         // Only necessary if players in a round is capped at fewer than total players
-        if (game.MaxPlayersPerRound.HasValue && game.Players.Count < game.MaxPlayersPerRound) {
+        if (game.MaxPlayersPerRound.HasValue && game.Players.Count > game.MaxPlayersPerRound) {
             switch (game.CorrectGuesserBehavior) {
 
                 // In "never" behavior, remove everyone from that round and start from the top of the list
@@ -150,17 +150,6 @@ public class GameManager
         else
         {
             game.PlayersInCurrentRound[0].HasControl = true;
-        }
-    }
-
-    public void StartNewRound(string gameId)
-    {
-        if (!_games.TryGetValue(gameId, out var game))
-            return;
-
-        lock (_lock)
-        {
-            game.CurrentRound++;
         }
     }
 
@@ -271,6 +260,8 @@ public class GameManager
         if (isCorrect)
         {
             correctGuesser.Score += value;
+            game.ClueAnswered[clueKey] = true;
+            game.WaitingForAnswer = false;
             
             InitializeRound(game, correctGuesser);
 
@@ -278,12 +269,7 @@ public class GameManager
         else
         {
             correctGuesser.Score -= value;
-            
-            InitializeRound(game, null);
         }
-
-        game.ClueAnswered[clueKey] = true;
-        game.WaitingForAnswer = false;
         
         return clueKey;
     }
