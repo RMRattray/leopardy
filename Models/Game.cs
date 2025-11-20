@@ -35,6 +35,7 @@ public class Game
     public int CurrentRound { get; set; } = 1;
     public List<Player> PlayersInCurrentRound { get; set; } = new();
     public List<Player> PlayersWaitingForRound { get; set; } = new();
+    public int PlayersNotBuzzedInCurrentRound { get; set; }
 }
 
 public class Player

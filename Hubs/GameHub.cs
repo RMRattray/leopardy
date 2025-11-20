@@ -208,11 +208,11 @@ public class GameHub : Hub
         var clueKey = _gameManager.JudgeAnswer(gameId, isCorrect);
         game = _gameManager.GetGame(gameId);
         
-        if (game != null && clueKey != null)
+        if (game != null)
         {
             await Clients.Group(gameId).SendAsync("AnswerJudged", isCorrect, game.Players, clueKey, game.PlayersInCurrentRound, game.PlayersWaitingForRound);
             
-            if (isCorrect && correctAnswer != null)
+            if (clueKey != null)
             {
                 await StartNewRound(gameId);
             }

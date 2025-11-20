@@ -85,6 +85,7 @@ public class GameManager
             }
 
             game.PlayersInCurrentRound[0].HasControl = true;
+            game.PlayersNotBuzzedInCurrentRound = game.PlayersInCurrentRound.Count;
         }
 
         return true;
@@ -151,6 +152,8 @@ public class GameManager
         {
             game.PlayersInCurrentRound[0].HasControl = true;
         }
+
+        game.PlayersNotBuzzedInCurrentRound = game.PlayersInCurrentRound.Count;
     }
 
     public Game? GetGame(string gameId)
@@ -219,6 +222,7 @@ public class GameManager
             game.CurrentPlayer = player;
             game.BuzzTime = DateTime.UtcNow;
             player.LastBuzzTime = DateTime.UtcNow;
+            game.PlayersNotBuzzedInCurrentRound -= 1;
         }
 
         return true;
@@ -260,33 +264,21 @@ public class GameManager
         if (isCorrect)
         {
             correctGuesser.Score += value;
-            game.ClueAnswered[clueKey] = true;
-            game.WaitingForAnswer = false;
-            
-            InitializeRound(game, correctGuesser);
-
         }
         else
         {
             correctGuesser.Score -= value;
         }
-        
-        return clueKey;
-    }
 
-    public void ResetClue(string gameId)
-    {
-        if (!_games.TryGetValue(gameId, out var game))
-            return;
-
-        game.CurrentClue = null;
-        game.CurrentCategory = null;
-        game.CurrentValue = null;
-        game.ClueRevealed = false;
         game.WaitingForAnswer = false;
-        game.CurrentPlayer = null;
-        game.CurrentAnswer = null;
-        game.BuzzTime = null;
+        if (isCorrect || game.PlayersNotBuzzedInCurrentRound == 0) {
+            game.ClueAnswered[clueKey] = true;
+            
+            InitializeRound(game, correctGuesser);
+            return clueKey;
+        }
+        
+        return null;
     }
 
     public void RemovePlayer(string connectionId)

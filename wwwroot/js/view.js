@@ -47,7 +47,7 @@ function initializeSignalR() {
         // Update players list if needed
     });
 
-    connection.on("RoundStarted", (round, playersInCurrentRound, firstPlayerName, playersWaiting) => {
+    connection.on("RoundStarted", (round, playersInCurrentRound, playersWaiting) => {
         playersInRound = playersInCurrentRound || [];
         waitingPlayers = playersWaiting || [];
         currentRound = round || 1;

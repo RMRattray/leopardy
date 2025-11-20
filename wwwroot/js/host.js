@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('startGameBtn').addEventListener('click', startGame);
     document.getElementById('markCorrect').addEventListener('click', () => judgeAnswer(true));
     document.getElementById('markIncorrect').addEventListener('click', () => judgeAnswer(false));
-    document.getElementById('closeClueBtn').addEventListener('click', closeClue);
+    // document.getElementById('closeClueBtn').addEventListener('click', closeClue);
     document.getElementById('savedGameSelect').addEventListener('change', handleSavedGameSelect);
     document.getElementById('correctGuesserBehavior').addEventListener('change', handleCorrectGuesserChange);
 });
@@ -32,7 +32,7 @@ function initializeSignalR() {
         .withUrl("/gameHub")
         .build();
 
-    connection.on("GameCreated", (gameCode, gameCategories) => {
+    connection.on("GameCreated", (gameCode, gameCategories) => { console.log("GameCreated", gameCode, gameCategories); console.log("GameCreated", gameCode, gameCategories);
         gameId = gameCode;
         categories = gameCategories;
         clueAnswered = {};
@@ -43,54 +43,50 @@ function initializeSignalR() {
         document.getElementById('gameLobby').classList.remove('d-none');
     });
 
-    connection.on("GameStarted", (playerName, playersInRound, currentRound) => {
+    connection.on("GameStarted", (playerName, playersInRound, currentRound) => { console.log("GameStarted", playerName, playersInRound, currentRound);
         document.getElementById('gameLobby').classList.add('d-none');
         document.getElementById('gameBoard').classList.remove('d-none');
 
         buildBoard();
     })
 
-    connection.on("PlayerJoined", (players) => {
+    connection.on("PlayerJoined", (players) => { console.log("PlayerJoined", players);
         updatePlayersList(players);
     });
 
-    connection.on("ClueSelected", (question, categoryName, value) => {
+    connection.on("ClueSelected", (question, categoryName, value) => { console.log("ClueSelected", question, categoryName, value);
         showClue(question, categoryName, value);
     });
 
-    connection.on("PlayerBuzzedIn", (playerName, connectionId) => {
+    connection.on("PlayerBuzzedIn", (playerName, connectionId) => { console.log("PlayerBuzzedIn", playerName, connectionId);
         showBuzzedIn(playerName);
     });
 
-    connection.on("AnswerSubmitted", (playerName, answer) => {
+    connection.on("AnswerSubmitted", (playerName, answer) => { console.log("AnswerSubmitted", playerName, answer);
         showAnswer(playerName, answer);
     });
 
-    connection.on("AnswerJudged", (isCorrect, players, clueKey) => {
-        clueAnswered[clueKey] = true;
-        updatePlayersList(players);
-        updateBoard();
-        
-        if (isCorrect) {
-            document.getElementById('buzzedInArea').classList.add('d-none');
-            setTimeout(() => {
-                closeClue();
-            }, 3000);
+    connection.on("AnswerJudged", (isCorrect, players, clueKey) => { console.log("AnswerJudged", isCorrect, players, clueKey);
+        if (clueKey != null) {
+            clueAnswered[clueKey] = true;
+            updatePlayersList(players);
+            updateBoard();
+            closeClue();
         }
     });
 
-    connection.on("ShowCorrectAnswer", (answer) => {
+    connection.on("ShowCorrectAnswer", (answer) => { console.log("ShowCorrectAnswer", answer);
         // Show correct answer to host when judging
         document.getElementById('correctAnswerText').textContent = answer;
         document.getElementById('correctAnswerArea').classList.remove('d-none');
     });
 
-    connection.on("ShowAnswer", (answer) => {
+    connection.on("ShowAnswer", (answer) => { console.log("ShowAnswer", answer);
         // Show answer to all players when correct
         console.log("Correct answer:", answer);
     });
 
-    connection.on("Error", (message) => {
+    connection.on("Error", (message) => { console.log("Error", message);
         alert("Error: " + message);
     });
 
@@ -347,11 +343,11 @@ function judgeAnswer(isCorrect) {
     connection.invoke("JudgeAnswer", gameId, isCorrect);
 }
 
-function closeClue() {
-    document.getElementById('currentClueArea').classList.add('d-none');
-    document.getElementById('buzzedInArea').classList.add('d-none');
-    connection.invoke("ResetClue", gameId);
-}
+// function closeClue() {
+//     document.getElementById('currentClueArea').classList.add('d-none');
+//     document.getElementById('buzzedInArea').classList.add('d-none');
+//     connection.invoke("ResetClue", gameId);
+// }
 
 function updatePlayersList(players) {
     const playersList = document.getElementById('playersList');

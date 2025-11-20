@@ -6,6 +6,7 @@ let clueAnswered = {};
 let answerTimer;
 let timeRemaining = 5;
 let canSelect = false;
+let amInRound = false;
 let canBuzz = false;
 let hasBuzzedIn = false;
 let waitingPlayers = [];
@@ -59,7 +60,9 @@ function initializeSignalR() {
     connection.on("RoundStarted", (isInControl, isInRound, playersWaiting) => { console.log("RoundStarted", isInControl, isInRound, playersWaiting);
         waitingPlayers = playersWaiting || [];
         canSelect = isInControl;
+        amInRound = isInRound;
         canBuzz = isInRound;
+        hasBuzzedIn = false;
 
         if (isInControl) {
             document.getElementById('selectTurn').classList.remove('d-none');
@@ -72,6 +75,9 @@ function initializeSignalR() {
 
         if (isInRound) {
             document.getElementById('clueView').classList.remove('d-none');
+            document.getElementById('buzzBtn').disabled = false;
+            document.getElementById('buzzBtn').textContent = 'Buzz In (Spacebar)';
+            hideClue();
         }
         else {
             document.getElementById('clueView').classList.add('d-none');
@@ -114,20 +120,19 @@ function initializeSignalR() {
 
     connection.on("AnswerJudged", (isCorrect, players, clueKey, playersInRound, playersWaiting) => { console.log("AnswerJudged", isCorrect, players, clueKey, playersInRound, playersWaiting);
         waitingPlayers = playersWaiting || [];
-        clueAnswered[clueKey] = true;
+        console.log(isCorrect, amInRound, hasBuzzedIn);
+        if (!isCorrect && amInRound && !hasBuzzedIn) {
+            console.log("So this runs");
+            canBuzz = true;
+            document.getElementById('buzzBtn').disabled = false;
+            document.getElementById('buzzBtn').textContent = 'Buzz In (Spacebar)';
+        }
+        if (isCorrect) {
+            clueAnswered[clueKey] = true;
+        }
         updateScore(players);
         updateBoard();
         updateWaitingPlayers();
-        
-        // Check if player is still in round
-        if (playersInRound && playersInRound.length > 0) {
-            const playerInRound = playersInRound.find(p => (p.name || p.Name) === playerName);
-            if (!playerInRound) {
-                // Player is not in current round
-                document.getElementById('selectTurn').classList.add('d-none');
-                canSelect = false;
-            }
-        }
     });
 
     connection.on("Error", (message) => { console.log("Error", message);
@@ -250,22 +255,24 @@ function showClue(question, categoryName, value) {
 }
 
 function hideClue() {
-    document.getElementById('clueView').classList.add('d-none');
-    document.getElementById('boardView').classList.remove('d-none');
-    document.getElementById('answerArea').classList.add('d-none');
-    document.getElementById('buzzArea').classList.add('d-none');
+    document.getElementById('clueQuestion').textContent = "";
+    document.getElementById('clueCategory').textContent = "";
+    document.getElementById('clueValue').textContent = "";
+
     if (answerTimer) {
         clearInterval(answerTimer);
     }
 }
 
 function buzzIn() {
+    console.log("CanBuzz:", canBuzz, "HasBuzzed", hasBuzzedIn);
     if (!canBuzz || hasBuzzedIn) {
         return;
     }
     
     hasBuzzedIn = true;
     canBuzz = false;
+    console.log("So this should be running ... shoot, it's the backend");
     connection.invoke("BuzzIn", gameId);
 }
 
