@@ -46,8 +46,6 @@ function initializeSignalR() {
     connection.on("GameStarted", (playerName, playersInRound, currentRound) => { console.log("GameStarted", playerName, playersInRound, currentRound);
         document.getElementById('gameLobby').classList.add('d-none');
         document.getElementById('gameBoard').classList.remove('d-none');
-
-        buildBoard();
     })
 
     connection.on("PlayerJoined", (players) => { console.log("PlayerJoined", players);
@@ -58,6 +56,10 @@ function initializeSignalR() {
         showClue(question, categoryName, value);
     });
 
+    connection.on("ShowClueCorrectAnswer", (answer) => {
+        document.getElementById('correctAnswerText').textContent = answer;
+    })
+
     connection.on("PlayerBuzzedIn", (playerName, connectionId) => { console.log("PlayerBuzzedIn", playerName, connectionId);
         showBuzzedIn(playerName);
     });
@@ -67,11 +69,10 @@ function initializeSignalR() {
     });
 
     connection.on("AnswerJudged", (isCorrect, players, clueKey) => { console.log("AnswerJudged", isCorrect, players, clueKey);
+        document.getElementById('buzzedInArea').classList.add('d-none');
         if (clueKey != null) {
             clueAnswered[clueKey] = true;
             updatePlayersList(players);
-            updateBoard();
-            closeClue();
         }
     });
 
@@ -253,64 +254,6 @@ function startGame() {
     connection.invoke("StartGame", gameId);
 }
 
-function buildBoard() {
-    const categoryRow = document.getElementById('categoryRow');
-    const cluesBody = document.getElementById('cluesBody');
-    
-    categoryRow.innerHTML = '';
-    cluesBody.innerHTML = '';
-    
-    // Add category headers
-    categories.forEach(category => {
-        const th = document.createElement('th');
-        th.className = 'text-white p-3';
-        th.style.cssText = 'background-color: #060CE9; font-weight: bold; font-size: 1.2em;';
-        th.textContent = category.name || category.Name;
-        categoryRow.appendChild(th);
-    });
-    
-    // Get maximum number of clues
-    const maxClues = Math.max(...categories.map(cat => {
-        const clues = cat.clues || cat.Clues || [];
-        return clues.length;
-    }));
-    
-    // Add clue cells
-    for (let i = 0; i < maxClues; i++) {
-        const tr = document.createElement('tr');
-        categories.forEach((category, catIndex) => {
-            const td = document.createElement('td');
-            td.className = 'p-4';
-            td.style.cssText = 'background-color: #060CE9; color: #FFD700; font-weight: bold; font-size: 1.5em; cursor: pointer; min-width: 150px; min-height: 100px;';
-            
-            const clues = category.clues || category.Clues || [];
-            if (clues[i]) {
-                const clue = clues[i];
-                const clueKey = `${catIndex}-${i}`;
-                const isAnswered = clueAnswered[clueKey] || false;
-                const clueValue = clue.value || clue.Value;
-                const categoryName = category.name || category.Name;
-                
-                if (isAnswered) {
-                    td.textContent = '';
-                    td.style.cursor = 'not-allowed';
-                    td.style.opacity = '0.5';
-                } else {
-                    td.textContent = `$${clueValue}`;
-                    td.addEventListener('click', () => selectClue(categoryName, clueValue, catIndex, i));
-                }
-            }
-            
-            tr.appendChild(td);
-        });
-        cluesBody.appendChild(tr);
-    }
-}
-
-function updateBoard() {
-    buildBoard();
-}
-
 function selectClue(categoryName, value, catIndex, clueIndex) {
     const clueKey = `${catIndex}-${clueIndex}`;
     if (clueAnswered[clueKey]) {
@@ -329,9 +272,7 @@ function showClue(question, categoryName, value) {
 }
 
 function showBuzzedIn(playerName) {
-    document.getElementById('buzzedPlayerName').textContent = `${playerName} buzzed in!`;
     document.getElementById('playerAnswer').textContent = 'Waiting for answer...';
-    document.getElementById('correctAnswerArea').classList.add('d-none');
     document.getElementById('buzzedInArea').classList.remove('d-none');
 }
 
@@ -342,12 +283,6 @@ function showAnswer(playerName, answer) {
 function judgeAnswer(isCorrect) {
     connection.invoke("JudgeAnswer", gameId, isCorrect);
 }
-
-// function closeClue() {
-//     document.getElementById('currentClueArea').classList.add('d-none');
-//     document.getElementById('buzzedInArea').classList.add('d-none');
-//     connection.invoke("ResetClue", gameId);
-// }
 
 function updatePlayersList(players) {
     const playersList = document.getElementById('playersList');

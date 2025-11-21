@@ -166,6 +166,7 @@ public class GameHub : Hub
         if (game?.CurrentClue != null)
         {
             await Clients.Group(gameId).SendAsync("ClueSelected", game.CurrentClue.Question, categoryName, value);
+            await Clients.Client(game.HostConnectionId).SendAsync("ShowClueCorrectAnswer", game.CurrentClue.Answer);
         }
     }
 
