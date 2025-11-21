@@ -25,7 +25,7 @@ public class GameManager
             MaxPlayersPerRound = maxPlayersPerRound,
             MaxPlayersPerGame = maxPlayersPerGame,
             CorrectGuesserBehavior = correctGuesserBehavior,
-            CorrectGuesserChooses = correctGuesserChooses
+            CorrectGuesserChooses = correctGuesserBehavior == CorrectGuesserBehavior.Stay ? correctGuesserChooses : false
         };
 
         _games.TryAdd(gameId, game);

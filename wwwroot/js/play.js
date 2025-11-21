@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('joinGameBtn').addEventListener('click', joinGame);
     document.getElementById('buzzBtn').addEventListener('click', buzzIn);
     document.getElementById('submitAnswerBtn').addEventListener('click', submitAnswer);
+    document.getElementById('answerInput').addEventListener('keydown', (event) => {
+        if (event.key == 'Enter') submitAnswer();
+    })
     
     // Listen for spacebar to buzz in
     document.addEventListener('keydown', function(event) {
@@ -65,31 +68,31 @@ function initializeSignalR() {
         hasBuzzedIn = false;
 
         if (isInControl) {
+            buildBoard();
             document.getElementById('selectTurn').classList.remove('d-none');
             document.getElementById('boardView').classList.remove('d-none');
+            document.getElementById('clueView').classList.add('d-none');
+        }
+        else if (amInRound) {
+            document.getElementById('boardView').classList.add('d-none');
+            document.getElementById('clueView').classList.remove('d-none');
+            hideClue();
         }
         else {
             document.getElementById('selectTurn').classList.add('d-none');
             document.getElementById('boardView').classList.add('d-none');
-        }
-
-        if (isInRound) {
-            document.getElementById('clueView').classList.remove('d-none');
-            document.getElementById('buzzBtn').disabled = false;
-            document.getElementById('buzzBtn').textContent = 'Buzz In (Spacebar)';
-            hideClue();
-        }
-        else {
             document.getElementById('clueView').classList.add('d-none');
         }
 
         updateWaitingPlayers();
-        buildBoard();
     })
 
     connection.on("ClueSelected", (question, categoryName, value) => { console.log("ClueSelected", question, categoryName, value);
         if (canBuzz) {
             showClue(question, categoryName, value);
+            document.getElementById('clueView').classList.remove('d-none');
+            document.getElementById('buzzBtn').disabled = false;
+            document.getElementById('buzzBtn').textContent = 'Buzz In (Spacebar)';
             document.getElementById('answerArea').classList.add('d-none');
             document.getElementById('buzzArea').classList.remove('d-none');
         }
@@ -122,12 +125,11 @@ function initializeSignalR() {
         waitingPlayers = playersWaiting || [];
         console.log(isCorrect, amInRound, hasBuzzedIn);
         if (!isCorrect && amInRound && !hasBuzzedIn) {
-            console.log("So this runs");
             canBuzz = true;
             document.getElementById('buzzBtn').disabled = false;
             document.getElementById('buzzBtn').textContent = 'Buzz In (Spacebar)';
         }
-        if (isCorrect) {
+        if (clueKey) {
             clueAnswered[clueKey] = true;
         }
         updateScore(players);
@@ -255,7 +257,7 @@ function showClue(question, categoryName, value) {
 }
 
 function hideClue() {
-    document.getElementById('clueQuestion').textContent = "";
+    document.getElementById('clueQuestion').textContent = "You're in!  Awaiting clue selection";
     document.getElementById('clueCategory').textContent = "";
     document.getElementById('clueValue').textContent = "";
 
@@ -279,6 +281,7 @@ function buzzIn() {
 function startAnswerTimer() {
     timeRemaining = 5;
     document.getElementById('timeRemaining').textContent = timeRemaining;
+    document.getElementById('timerBar').style.width = '100%';
     
     answerTimer = setInterval(() => {
         timeRemaining--;
