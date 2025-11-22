@@ -286,18 +286,72 @@ function judgeAnswer(isCorrect) {
 
 function updatePlayersList(players) {
     const playersList = document.getElementById('playersList');
-    playersList.innerHTML = '';
-    
-    players.forEach(player => {
-        const li = document.createElement('div');
-        li.className = 'list-group-item d-flex justify-content-between align-items-center';
-        const playerName = player.name || player.Name || 'Unknown';
-        const playerScore = player.score || player.Score || 0;
-        li.innerHTML = `
-            <span>${playerName}</span>
-            <span class="badge bg-primary rounded-pill">$${playerScore}</span>
-        `;
-        playersList.appendChild(li);
-    });
+    const lobbyPlayers = document.getElementById('lobbyPlayers');
+    const lobbyNoPlayers = document.getElementById('lobbyNoPlayers');
+
+    // Update in-game players list (shown after game starts)
+    if (playersList) {
+        playersList.innerHTML = '';
+        
+        players.forEach(player => {
+            const li = document.createElement('div');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            const playerName = player.name || player.Name || 'Unknown';
+            const playerScore = player.score || player.Score || 0;
+            li.innerHTML = `
+                <span>${playerName}</span>
+                <span class="badge bg-primary rounded-pill">$${playerScore}</span>
+            `;
+            playersList.appendChild(li);
+        });
+    }
+
+    // Update lobby players (clickable boxes before game start)
+    if (lobbyPlayers && lobbyNoPlayers) {
+        lobbyPlayers.innerHTML = '';
+
+        if (!players || players.length === 0) {
+            lobbyNoPlayers.classList.remove('d-none');
+            return;
+        }
+
+        lobbyNoPlayers.classList.add('d-none');
+
+        players.forEach(player => {
+            const playerName = player.name || player.Name || 'Unknown';
+            const playerScore = player.score || player.Score || 0;
+            const connectionId = player.connectionId || player.ConnectionId || '';
+
+            const card = document.createElement('div');
+            card.className = 'card shadow-sm';
+            card.style.width = '180px';
+            card.style.cursor = 'pointer';
+            card.dataset.connectionId = connectionId;
+
+            card.innerHTML = `
+                <div class="card-body text-center">
+                    <h5 class="card-title mb-2">${playerName}</h5>
+                    <p class="card-text mb-1"><small class="text-muted">Score: $${playerScore}</small></p>
+                    <p class="card-text"><small class="text-muted">Click to remove</small></p>
+                </div>
+            `;
+
+            card.addEventListener('click', () => {
+                if (!connectionId) {
+                    return;
+                }
+
+                const confirmRemove = window.confirm(`Remove "${playerName}" from this game?`);
+                if (confirmRemove) {
+                    connection.invoke("RemovePlayer", gameId, connectionId)
+                        .catch(err => {
+                            console.error("Failed to remove player:", err);
+                        });
+                }
+            });
+
+            lobbyPlayers.appendChild(card);
+        });
+    }
 }
 

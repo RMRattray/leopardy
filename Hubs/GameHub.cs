@@ -75,6 +75,10 @@ public class GameHub : Hub
         await Groups.AddToGroupAsync(Context.ConnectionId, game.GameId);
     }
 
+    /// <summary>
+    /// Join a game as a player (used by the Play screen).
+    /// Viewers should use <see cref="JoinView"/> instead.
+    /// </summary>
     public async Task JoinGame(string gameId, string playerName)
     {
         var game = _gameManager.GetGame(gameId);
@@ -84,40 +88,64 @@ public class GameHub : Hub
             return;
         }
 
-        // Allow viewers to join even after game has started
-        bool isViewer = playerName == "Viewer";
+        var success = _gameManager.JoinGame(gameId, Context.ConnectionId, playerName);
         
-        if (!isViewer)
+        if (!success)
         {
-            var success = _gameManager.JoinGame(gameId, Context.ConnectionId, playerName);
-            
-            if (!success)
-            {
-                await Clients.Caller.SendAsync("Error", "Failed to join game");
-                return;
-            }
-            
-            await Clients.Group(gameId).SendAsync("PlayerJoined", game.Players);
+            await Clients.Caller.SendAsync("Error", "Failed to join game");
+            return;
+        }
 
-            await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
-        }
-        else {
-            await Groups.AddToGroupAsync(Context.ConnectionId, gameId + "_viewers");
-        }
-        
+        // Add player to the main game group and broadcast updated player list
+        await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
+        await Clients.Groups(gameId, gameId + "_viewers").SendAsync("PlayerJoined", game.Players);
+
         await Clients.Caller.SendAsync("JoinedGame", game.Categories, game.ClueAnswered);
-        
-        // If game has started, send current state to viewer
-        if (isViewer && game.Started)
+    }
+
+    /// <summary>
+    /// Join a game as a viewer (used by the View screen).
+    /// Viewers are placed into a dedicated &lt;gameId&gt;_viewers SignalR group
+    /// but receive all the same game events as players.
+    /// </summary>
+    public async Task JoinView(string gameId)
+    {
+        var game = _gameManager.GetGame(gameId);
+        if (game == null)
+        {
+            await Clients.Caller.SendAsync("Error", "Game not found");
+            return;
+        }
+
+        await Groups.AddToGroupAsync(Context.ConnectionId, gameId + "_viewers");
+
+        // Send basic game state so the viewer can render the board immediately
+        await Clients.Caller.SendAsync("JoinedGame", game.Categories, game.ClueAnswered);
+
+        // If the game has already started, send the current round / board state
+        if (game.Started)
         {
             var playerWithControl = game.PlayersInCurrentRound.FirstOrDefault(p => p.HasControl);
-            var firstPlayerName = playerWithControl?.Name ?? (game.PlayersInCurrentRound.Count > 0 ? game.PlayersInCurrentRound[0].Name : "");
-            await Clients.Caller.SendAsync("GameStarted", firstPlayerName, game.PlayersInCurrentRound, game.CurrentRound, game.PlayersWaitingForRound);
-            
+            var firstPlayerName = playerWithControl?.Name 
+                ?? (game.PlayersInCurrentRound.Count > 0 ? game.PlayersInCurrentRound[0].Name : "");
+
+            await Clients.Caller.SendAsync(
+                "GameStarted",
+                firstPlayerName,
+                game.PlayersInCurrentRound,
+                game.CurrentRound,
+                game.PlayersWaitingForRound
+            );
+
             // Send current clue if one is active
             if (game.CurrentClue != null && game.ClueRevealed)
             {
-                await Clients.Caller.SendAsync("ClueSelected", game.CurrentClue.Question, game.CurrentCategory, game.CurrentValue);
+                await Clients.Caller.SendAsync(
+                    "ClueSelected",
+                    game.CurrentClue.Question,
+                    game.CurrentCategory,
+                    game.CurrentValue
+                );
             }
         }
     }
@@ -139,7 +167,22 @@ public class GameHub : Hub
             return;
         }
 
+        // Notify players that the game has started
         await Clients.Group(gameId).SendAsync("GameStarted", game.PlayersWaitingForRound);
+
+        // Notify any viewers with richer context so they can show board + players
+        var playerWithControl = game.PlayersInCurrentRound.FirstOrDefault(p => p.HasControl);
+        var firstPlayerName = playerWithControl?.Name 
+            ?? (game.PlayersInCurrentRound.Count > 0 ? game.PlayersInCurrentRound[0].Name : "");
+
+        await Clients.Group(gameId + "_viewers").SendAsync(
+            "GameStarted",
+            firstPlayerName,
+            game.PlayersInCurrentRound,
+            game.CurrentRound,
+            game.PlayersWaitingForRound
+        );
+
         await StartNewRound(gameId);
     }
 
@@ -165,7 +208,8 @@ public class GameHub : Hub
         
         if (game?.CurrentClue != null)
         {
-            await Clients.Group(gameId).SendAsync("ClueSelected", game.CurrentClue.Question, categoryName, value);
+            await Clients.Groups(gameId, gameId + "_viewers")
+                .SendAsync("ClueSelected", game.CurrentClue.Question, categoryName, value);
             await Clients.Client(game.HostConnectionId).SendAsync("ShowClueCorrectAnswer", game.CurrentClue.Answer);
         }
     }
@@ -177,7 +221,8 @@ public class GameHub : Hub
         
         if (success && game?.CurrentPlayer != null)
         {
-            await Clients.Group(gameId).SendAsync("PlayerBuzzedIn", game.CurrentPlayer.Name, game.CurrentPlayer.ConnectionId);
+            await Clients.Groups(gameId, gameId + "_viewers")
+                .SendAsync("PlayerBuzzedIn", game.CurrentPlayer.Name, game.CurrentPlayer.ConnectionId);
         }
         else if (!success)
         {
@@ -192,7 +237,8 @@ public class GameHub : Hub
         
         if (game?.CurrentPlayer != null && game.CurrentAnswer != null)
         {
-            await Clients.Group(gameId).SendAsync("AnswerSubmitted", game.CurrentPlayer.Name, game.CurrentAnswer);
+            await Clients.Groups(gameId, gameId + "_viewers")
+                .SendAsync("AnswerSubmitted", game.CurrentPlayer.Name, game.CurrentAnswer);
         }
     }
 
@@ -211,7 +257,8 @@ public class GameHub : Hub
         
         if (game != null)
         {
-            await Clients.Group(gameId).SendAsync("AnswerJudged", isCorrect, game.Players, clueKey);
+            await Clients.Groups(gameId, gameId + "_viewers")
+                .SendAsync("AnswerJudged", isCorrect, game.Players, clueKey);
             
             if (clueKey != null)
             {
@@ -234,7 +281,44 @@ public class GameHub : Hub
                 await Clients.Client(p.ConnectionId).SendAsync("RoundStarted", false, false, game.PlayersInCurrentRound, game.PlayersWaitingForRound);
             }
 
-            await Clients.Group(gameId + "_viewers").SendAsync("RoundStarted", 0, game.PlayersInCurrentRound, game.PlayersWaitingForRound);
+            await Clients.Group(gameId + "_viewers")
+                .SendAsync("RoundStarted", game.CurrentRound, game.PlayersInCurrentRound, game.PlayersWaitingForRound);
+        }
+    }
+
+    /// <summary>
+    /// Host-only operation to remove a player from the lobby before the game starts.
+    /// </summary>
+    public async Task RemovePlayer(string gameId, string playerConnectionId)
+    {
+        var game = _gameManager.GetGame(gameId);
+        if (game == null)
+        {
+            await Clients.Caller.SendAsync("Error", "Game not found");
+            return;
+        }
+
+        // Only the host for this game can remove players
+        if (game.HostConnectionId != Context.ConnectionId)
+        {
+            await Clients.Caller.SendAsync("Error", "Only the host can remove players");
+            return;
+        }
+
+        if (game.Started)
+        {
+            await Clients.Caller.SendAsync("Error", "Cannot remove players after the game has started");
+            return;
+        }
+
+        _gameManager.RemovePlayer(playerConnectionId);
+
+        // Re-fetch to get the updated players list and broadcast
+        game = _gameManager.GetGame(gameId);
+        if (game != null)
+        {
+            await Clients.Groups(gameId, gameId + "_viewers")
+                .SendAsync("PlayerJoined", game.Players);
         }
     }
 

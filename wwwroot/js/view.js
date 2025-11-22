@@ -43,10 +43,17 @@ function initializeSignalR() {
         updateChooser();
     });
 
+    // Keep viewers up to date with total player count before/after game start
     connection.on("PlayerJoined", (players) => {
-        // Update players list if needed
+        const totalPlayers = (players || []).length;
+        const countEl = document.getElementById('playerCount');
+        if (countEl) {
+            countEl.textContent = totalPlayers;
+        }
     });
 
+    // For viewers, RoundStarted is broadcast to the viewers group with:
+    // (roundNumber, playersInCurrentRound, playersWaitingForRound)
     connection.on("RoundStarted", (round, playersInCurrentRound, playersWaiting) => {
         playersInRound = playersInCurrentRound || [];
         waitingPlayers = playersWaiting || [];
@@ -78,9 +85,9 @@ function initializeSignalR() {
         }
     });
 
-    connection.on("AnswerJudged", (isCorrect, players, clueKey, playersInCurrentRound, playersWaiting) => {
-        playersInRound = playersInCurrentRound || [];
-        waitingPlayers = playersWaiting || [];
+    connection.on("AnswerJudged", (isCorrect, players, clueKey) => {
+        // Scores have changed; rebuild lists from the players array and existing round/wait lists
+        // We keep playersInRound / waitingPlayers as-is; RoundStarted will refresh seating when a clue completes.
         clueAnswered[clueKey] = true;
         updatePlayersInRound();
         updateWaitingPlayers();
@@ -106,10 +113,6 @@ function initializeSignalR() {
         }
     });
 
-    connection.on("PlayerJoined", (players) => {
-        // Update if needed
-    });
-
     connection.on("Error", (message) => {
         console.error("Error: " + message);
     });
@@ -117,11 +120,12 @@ function initializeSignalR() {
     connection.start()
         .then(() => {
             console.log("SignalR Connected");
-            // Join the game group to receive updates
+            // Join as a dedicated viewer so this connection is added to the <gameId>_viewers group
             if (gameId) {
-                connection.invoke("JoinGame", gameId, "Viewer").catch(err => {
-                    console.error("Failed to join game as viewer:", err);
-                });
+                connection.invoke("JoinView", gameId)
+                    .catch(err => {
+                        console.error("Failed to join game as viewer:", err);
+                    });
             }
         })
         .catch(err => {

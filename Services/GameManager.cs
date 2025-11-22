@@ -289,6 +289,7 @@ public class GameManager
             {
                 lock (_lock)
                 {
+                    
                     game.Players.RemoveAll(p => p.ConnectionId == connectionId);
                 }
             }
