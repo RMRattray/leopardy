@@ -9,6 +9,7 @@ let canSelect = false;
 let amInRound = false;
 let canBuzz = false;
 let hasBuzzedIn = false;
+let playersInRound = [];
 let waitingPlayers = [];
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -60,7 +61,8 @@ function initializeSignalR() {
         buildBoard();
     })
 
-    connection.on("RoundStarted", (isInControl, isInRound, playersWaiting) => { console.log("RoundStarted", isInControl, isInRound, playersWaiting);
+    connection.on("RoundStarted", (isInControl, isInRound, playersPlaying, playersWaiting) => { console.log("RoundStarted", isInControl, isInRound, playersPlaying, playersWaiting);
+        playersInRound = playersPlaying || [];
         waitingPlayers = playersWaiting || [];
         canSelect = isInControl;
         amInRound = isInRound;
@@ -72,16 +74,19 @@ function initializeSignalR() {
             document.getElementById('selectTurn').classList.remove('d-none');
             document.getElementById('boardView').classList.remove('d-none');
             document.getElementById('clueView').classList.add('d-none');
+            document.getElementById('playerListArea').classList.add('d-none');
         }
         else if (amInRound) {
             document.getElementById('boardView').classList.add('d-none');
             document.getElementById('clueView').classList.remove('d-none');
+            document.getElementById('playerListArea').classList.add('d-none');
             hideClue();
         }
         else {
             document.getElementById('selectTurn').classList.add('d-none');
             document.getElementById('boardView').classList.add('d-none');
             document.getElementById('clueView').classList.add('d-none');
+            document.getElementById('playerListArea').classList.remove('d-none');
         }
 
         updateWaitingPlayers();
@@ -121,9 +126,7 @@ function initializeSignalR() {
         // Could show that an answer was submitted
     });
 
-    connection.on("AnswerJudged", (isCorrect, players, clueKey, playersInRound, playersWaiting) => { console.log("AnswerJudged", isCorrect, players, clueKey, playersInRound, playersWaiting);
-        waitingPlayers = playersWaiting || [];
-        console.log(isCorrect, amInRound, hasBuzzedIn);
+    connection.on("AnswerJudged", (isCorrect, players, clueKey) => { console.log("AnswerJudged", isCorrect, players, clueKey);
         if (!isCorrect && amInRound && !hasBuzzedIn) {
             canBuzz = true;
             document.getElementById('buzzBtn').disabled = false;
@@ -133,8 +136,6 @@ function initializeSignalR() {
             clueAnswered[clueKey] = true;
         }
         updateScore(players);
-        updateBoard();
-        updateWaitingPlayers();
     });
 
     connection.on("Error", (message) => { console.log("Error", message);
@@ -316,13 +317,19 @@ function submitAnswer() {
 function updateWaitingPlayers() {
     const waitingPlayersList = document.getElementById('waitingPlayers');
     if (!waitingPlayersList) return;
-    
+
     waitingPlayersList.innerHTML = '';
-    
-    if (waitingPlayers.length === 0) {
-        waitingPlayersList.innerHTML = '<div class="list-group-item text-muted">No players waiting</div>';
-        return;
-    }
+
+    playersInRound.forEach((player) => {
+        const li = document.createElement('div');
+        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+        const playerName = player.name || player.Name || 'Unknown';
+        
+        li.innerHTML = `
+            <span><span class="badge bg-success text-light me-2">Playing</span>${playerName}</span>
+        `;
+        waitingPlayersList.appendChild(li);
+    });
     
     waitingPlayers.forEach((player, index) => {
         const li = document.createElement('div');

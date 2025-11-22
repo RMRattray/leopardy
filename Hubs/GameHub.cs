@@ -211,7 +211,7 @@ public class GameHub : Hub
         
         if (game != null)
         {
-            await Clients.Group(gameId).SendAsync("AnswerJudged", isCorrect, game.Players, clueKey, game.PlayersInCurrentRound, game.PlayersWaitingForRound);
+            await Clients.Group(gameId).SendAsync("AnswerJudged", isCorrect, game.Players, clueKey);
             
             if (clueKey != null)
             {
@@ -228,10 +228,10 @@ public class GameHub : Hub
         {
             var playerWithControl = game.PlayersInCurrentRound.FirstOrDefault(p => p.HasControl);
             foreach (Player p in game.PlayersInCurrentRound) {
-                await Clients.Client(p.ConnectionId).SendAsync("RoundStarted", p.HasControl, true, game.PlayersWaitingForRound);
+                await Clients.Client(p.ConnectionId).SendAsync("RoundStarted", p.HasControl, true, game.PlayersInCurrentRound, game.PlayersWaitingForRound);
             }
             foreach (Player p in game.PlayersWaitingForRound) {
-                await Clients.Client(p.ConnectionId).SendAsync("RoundStarted", false, false, game.PlayersWaitingForRound);
+                await Clients.Client(p.ConnectionId).SendAsync("RoundStarted", false, false, game.PlayersInCurrentRound, game.PlayersWaitingForRound);
             }
 
             await Clients.Group(gameId + "_viewers").SendAsync("RoundStarted", 0, game.PlayersInCurrentRound, game.PlayersWaitingForRound);
