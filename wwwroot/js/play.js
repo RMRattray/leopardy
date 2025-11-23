@@ -52,6 +52,12 @@ function initializeSignalR() {
         document.getElementById('playerNameDisplay').textContent = playerName;
     });
 
+    connection.on("PlayerRemoved", () => {
+        document.getElementById('joinGame').classList.remove('d-none');
+        document.getElementById('waitScreen').classList.add('d-none');
+        document.getElementById('playerNameDisplay').textContent = "";
+    })
+
     connection.on("GameStarted", (playersWaiting) => { console.log("GameStarted", playersWaiting);
         waitingPlayers = playersWaiting || [];
         document.getElementById('waitScreen').classList.add('d-none');

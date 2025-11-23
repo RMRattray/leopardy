@@ -71,6 +71,8 @@ public class GameManager
         {
             if (game.Started) return false;
 
+            if (game.Players.Count == 0) return false;
+
             game.Started = true;
             
             // Initial distribution of players in round

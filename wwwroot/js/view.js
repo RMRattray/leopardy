@@ -8,19 +8,10 @@ let currentRound = 1;
 let buzzIns = [];
 let answers = [];
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Get gameId from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    gameId = urlParams.get('gameId');
-    
-    if (!gameId) {
-        alert('No game ID provided');
-        return;
-    }
-    
-    document.getElementById('gameIdDisplay').textContent = gameId;
-    
+document.addEventListener('DOMContentLoaded', function() {    
     initializeSignalR();
+
+    document.getElementById('joinGameBtn').addEventListener('click', joinGame);
 });
 
 function initializeSignalR() {
@@ -104,8 +95,13 @@ function initializeSignalR() {
     });
 
     connection.on("JoinedGame", (gameCategories, answered) => {
+        console.log("This one as well");
         categories = gameCategories || [];
         clueAnswered = answered || {};
+
+        document.getElementById("gameIdDisplay").innerText = gameId;
+        document.getElementById("joinGame").classList.add("d-none");
+        document.getElementById("waitingScreen").classList.remove("d-none");
         
         // If we have categories, build the board
         if (categories.length > 0) {
@@ -120,17 +116,22 @@ function initializeSignalR() {
     connection.start()
         .then(() => {
             console.log("SignalR Connected");
-            // Join as a dedicated viewer so this connection is added to the <gameId>_viewers group
-            if (gameId) {
-                connection.invoke("JoinView", gameId)
-                    .catch(err => {
-                        console.error("Failed to join game as viewer:", err);
-                    });
-            }
         })
         .catch(err => {
             console.error("SignalR Connection Error: ", err);
         });
+}
+
+function joinGame() {
+    console.log("This function runs");
+    gameId = document.getElementById('gameCodeInput').value.trim();
+    
+    if (!gameId) {
+        alert('Please enter a game code');
+        return;
+    }
+    
+    connection.invoke("JoinView", gameId);
 }
 
 function updatePlayersInRound() {

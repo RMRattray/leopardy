@@ -5,9 +5,26 @@
 }
 
 <div class="container-fluid">
-    <div id="waitingScreen" class="text-center mt-5">
+    <div id="joinGame" class="text-center mt-5">
+        <h1 class="mb-4">Enter game code</h1>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="gameCodeInput" class="form-label">Game Code</label>
+                            <input type="text" class="form-control form-control-lg" id="gameCodeInput" placeholder="Enter game code" maxlength="4">
+                        </div>
+                        <button id="joinGameBtn" class="btn btn-info btn-lg">Watch Game</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="waitingScreen" class="text-center mt-5 d-none">
         <h2>Waiting for game to start...</h2>
-        <p>Game ID: <span id="gameIdDisplay"></span></p>
+        <p>Game ID: <h1 id="gameIdDisplay" class="display-1 text-primary" style="font-family: 'Courier New', monospace; font-weight: bold;"></h1></p>
         <p>Total players joined: <span id="playerCount">0</span></p>
     </div>
 

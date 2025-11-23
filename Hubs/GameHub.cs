@@ -313,6 +313,9 @@ public class GameHub : Hub
 
         _gameManager.RemovePlayer(playerConnectionId);
 
+        await Groups.RemoveFromGroupAsync(playerConnectionId, gameId);
+        await Clients.Client(playerConnectionId).SendAsync("PlayerRemoved");
+
         // Re-fetch to get the updated players list and broadcast
         game = _gameManager.GetGame(gameId);
         if (game != null)
