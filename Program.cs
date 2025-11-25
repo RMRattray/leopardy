@@ -37,6 +37,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 
 
 builder.Services.AddSingleton<GameManager>();
+builder.Services.AddSingleton<GameService>();
 builder.Services.AddScoped<CsvService>();
 builder.Services.AddCors(options =>
 {
