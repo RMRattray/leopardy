@@ -10,7 +10,7 @@ public class GameManager
     private readonly object _lock = new();
 
     public Game CreateGame(string gameName, string hostConnectionId, List<Category> categories, 
-        int? maxPlayersPerRound, int? maxPlayersPerGame, CorrectGuesserBehavior correctGuesserBehavior, bool correctGuesserChooses)
+        int? maxPlayersPerRound, int? maxPlayersPerGame, CorrectGuesserBehavior correctGuesserBehavior, bool correctGuesserChooses, int? answerTimeLimitSeconds, int? roundMaxDuration)
     {
         var gameId = GenerateGameCode();
         var game = new Game
@@ -25,7 +25,9 @@ public class GameManager
             MaxPlayersPerRound = maxPlayersPerRound,
             MaxPlayersPerGame = maxPlayersPerGame,
             CorrectGuesserBehavior = correctGuesserBehavior,
-            CorrectGuesserChooses = correctGuesserBehavior == CorrectGuesserBehavior.Stay ? correctGuesserChooses : false
+            CorrectGuesserChooses = correctGuesserBehavior == CorrectGuesserBehavior.Stay ? correctGuesserChooses : false,
+            AnswerTimeLimitSeconds = answerTimeLimitSeconds,
+            RoundMaxDuration = roundMaxDuration
         };
 
         _games.TryAdd(gameId, game);
@@ -94,7 +96,7 @@ public class GameManager
     }
 
     // Set who is in the next round, drawing from pool of players
-    private void InitializeRound(Game game, Player? winner)
+    public void InitializeRound(Game game, Player? winner)
     {
 
         // Reset control for all players
@@ -201,6 +203,7 @@ public class GameManager
         game.CurrentPlayer = null;
         game.CurrentAnswer = null;
         game.BuzzTime = null;
+        game.RoundOver = false;
     }
 
     public bool BuzzIn(string gameId, string connectionId)
@@ -273,7 +276,8 @@ public class GameManager
         }
 
         game.WaitingForAnswer = false;
-        if (isCorrect || game.PlayersNotBuzzedInCurrentRound == 0) {
+        game.CurrentPlayer = null;
+        if (isCorrect || game.PlayersNotBuzzedInCurrentRound == 0 || game.RoundOver) {
             game.ClueAnswered[clueKey] = true;
             
             InitializeRound(game, correctGuesser);
@@ -296,6 +300,46 @@ public class GameManager
                 }
             }
         }
+    }
+
+    public bool MarkClueAsAnsweredAndStartNewRound(string gameId)
+    {
+        if (!_games.TryGetValue(gameId, out var game))
+            return false;
+
+        lock (_lock)
+        {
+            if (game.CurrentCategory == null || game.CurrentValue == null)
+                return false;
+
+            var categoryIndex = game.Categories.FindIndex(c => c.Name == game.CurrentCategory);
+            if (categoryIndex < 0)
+                return false;
+
+            var category = game.Categories[categoryIndex];
+            var clueIndex = category.Clues.FindIndex(c => c.Value == game.CurrentValue);
+            if (clueIndex < 0)
+                return false;
+
+            var clueKey = $"{categoryIndex}-{clueIndex}";
+            game.ClueAnswered[clueKey] = true;
+
+            // Reset clue state
+            game.CurrentClue = null;
+            game.CurrentCategory = null;
+            game.CurrentValue = null;
+            game.ClueRevealed = false;
+            game.WaitingForAnswer = false;
+            game.CurrentPlayer = null;
+            game.CurrentAnswer = null;
+            game.BuzzTime = null;
+
+            // Start new round with no winner
+            InitializeRound(game, null);
+            game.CurrentRound++;
+        }
+
+        return true;
     }
 
     private string GenerateGameCode()

@@ -240,13 +240,19 @@ function createGame() {
     const correctGuesserBehavior = parseInt(document.getElementById('correctGuesserBehavior').value);
     const correctGuesserChooses = document.getElementById('correctGuesserChooses').checked;
     
+    const roundTimeLimitInput = document.getElementById('roundTimeLimit').value;
+    const roundTimeLimitSeconds = roundTimeLimitInput ? parseInt(roundTimeLimitInput) : null;
+
+    const answerTimeLimitInput = document.getElementById('answerTimeLimit').value;
+    const answerTimeLimitSeconds = answerTimeLimitInput ? parseInt(answerTimeLimitInput) : null;
+    
     if (selectedCategories) {
         // Use custom categories
-        connection.invoke("CreateGameWithCategories", "Jeopardy Game", selectedCategories, maxPlayersPerRound, maxPlayersPerGame, correctGuesserBehavior, correctGuesserChooses);
+        connection.invoke("CreateGameWithCategories", "Jeopardy Game", selectedCategories, maxPlayersPerRound, maxPlayersPerGame, correctGuesserBehavior, correctGuesserChooses, roundTimeLimitSeconds, answerTimeLimitSeconds);
     } else {
         // Use template
         const template = document.getElementById('gameTemplate').value;
-        connection.invoke("CreateGame", "Jeopardy Game", template, maxPlayersPerRound, maxPlayersPerGame, correctGuesserBehavior, correctGuesserChooses);
+        connection.invoke("CreateGame", "Jeopardy Game", template, maxPlayersPerRound, maxPlayersPerGame, correctGuesserBehavior, correctGuesserChooses, roundTimeLimitSeconds, answerTimeLimitSeconds);
     }
 }
 

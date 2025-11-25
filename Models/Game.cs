@@ -30,12 +30,15 @@ public class Game
     public int? MaxPlayersPerGame { get; set; } // null = infinite
     public CorrectGuesserBehavior CorrectGuesserBehavior { get; set; } = CorrectGuesserBehavior.Stay;
     public bool CorrectGuesserChooses { get; set; } = true;
+    public int? AnswerTimeLimitSeconds { get; set; } // null = no time limit
+    public int? RoundMaxDuration { get; set; }
     
     // Round tracking
     public int CurrentRound { get; set; } = 1;
     public List<Player> PlayersInCurrentRound { get; set; } = new();
     public List<Player> PlayersWaitingForRound { get; set; } = new();
     public int PlayersNotBuzzedInCurrentRound { get; set; }
+    public bool RoundOver { get; set; } = false;
 }
 
 public class Player

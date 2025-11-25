@@ -133,6 +133,9 @@ function initializeSignalR() {
     });
 
     connection.on("AnswerJudged", (isCorrect, players, clueKey) => { console.log("AnswerJudged", isCorrect, players, clueKey);
+        if (answerTimer) {
+            clearInterval(answerTimer);
+        }
         if (!isCorrect && amInRound && !hasBuzzedIn) {
             canBuzz = true;
             document.getElementById('buzzBtn').disabled = false;
@@ -142,6 +145,19 @@ function initializeSignalR() {
             clueAnswered[clueKey] = true;
         }
         updateScore(players);
+    });
+
+    connection.on("AnswerTimeout", () => {
+        console.log("AnswerTimeout received");
+        // Timer expired - treat as wrong answer
+        if (answerTimer) {
+            clearInterval(answerTimer);
+        }
+        // The server will handle processing this as a wrong answer
+        // We just need to clear the UI state
+        canBuzz = false;
+        document.getElementById('buzzBtn').disabled = true;
+        document.getElementById('buzzBtn').textContent = "Timed out";
     });
 
     connection.on("Error", (message) => { console.log("Error", message);
