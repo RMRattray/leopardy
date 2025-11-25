@@ -58,7 +58,11 @@ public class GameService
         try
         {
             var json = System.Text.Json.JsonSerializer.Serialize(categoriesData);
-            categories = System.Text.Json.JsonSerializer.Deserialize<List<Category>>(json) ?? new List<Category>();
+            categories = System.Text.Json.JsonSerializer.Deserialize<List<Category>>(json, new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                }
+                ) ?? new List<Category>();
         }
         catch (Exception ex)
         {
@@ -464,8 +468,6 @@ public class GameService
             try
             {
                 await Task.Delay(TimeSpan.FromSeconds(timeLimitSeconds), cts.Token);
-
-                Console.WriteLine("The start answer timer task runs after some time");
                 
                 // Answer timer expired - treat as wrong answer
                 var game = _gameManager.GetGame(gameId);

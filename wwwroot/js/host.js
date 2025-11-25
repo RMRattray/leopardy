@@ -32,7 +32,7 @@ function initializeSignalR() {
         .withUrl("/gameHub")
         .build();
 
-    connection.on("GameCreated", (gameCode, gameCategories) => { console.log("GameCreated", gameCode, gameCategories); console.log("GameCreated", gameCode, gameCategories);
+    connection.on("GameCreated", (gameCode, gameCategories) => { console.log("GameCreated", gameCode, gameCategories);
         gameId = gameCode;
         categories = gameCategories;
         clueAnswered = {};
