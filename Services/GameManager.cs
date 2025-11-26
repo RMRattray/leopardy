@@ -158,6 +158,16 @@ public class GameManager
         }
 
         game.PlayersNotBuzzedInCurrentRound = game.PlayersInCurrentRound.Count;
+
+        // Reset clue state
+        game.CurrentClue = null;
+        game.CurrentCategory = null;
+        game.CurrentValue = null;
+        game.ClueRevealed = false;
+        game.WaitingForAnswer = false;
+        game.CurrentPlayer = null;
+        game.CurrentAnswer = null;
+        game.BuzzTime = null;
     }
 
     public Game? GetGame(string gameId)
@@ -287,7 +297,7 @@ public class GameManager
         return null;
     }
 
-    public void RemovePlayer(string connectionId)
+    public string RemovePlayer(string connectionId)
     {
         if (_connectionToGame.TryRemove(connectionId, out var gameId))
         {
@@ -297,9 +307,32 @@ public class GameManager
                 {
                     
                     game.Players.RemoveAll(p => p.ConnectionId == connectionId);
+
+                    // Can need to remove player after game has started (on their disconnection)
+                    if (game.Started) {
+                        
+                        var departer = game.PlayersInCurrentRound.FirstOrDefault(p => p.ConnectionId == connectionId);
+                        if (departer != null) {
+                            // Oh dear - a player in the current round disconnected
+                            
+                            game.PlayersInCurrentRound.FirstOrDefault(p => p.ConnectionId == connectionId);
+                            if (game.PlayersWaitingForRound.Count > 0) {
+                                game.PlayersInCurrentRound.Add(game.PlayersWaitingForRound[0]);
+                                game.PlayersWaitingForRound.Remove(game.PlayersWaitingForRound[0]);
+                            }
+                            if (departer.HasControl && game.CurrentClue == null) {
+                                game.PlayersInCurrentRound[0].HasControl = true;
+                            }
+                        }
+                        else {
+                            game.PlayersWaitingForRound.RemoveAll(p => p.ConnectionId == connectionId);
+                        }
+                    }
                 }
+                return game.GameId;
             }
         }
+        return "";
     }
 
     public bool MarkClueAsAnsweredAndStartNewRound(string gameId)
@@ -323,16 +356,6 @@ public class GameManager
 
             var clueKey = $"{categoryIndex}-{clueIndex}";
             game.ClueAnswered[clueKey] = true;
-
-            // Reset clue state
-            game.CurrentClue = null;
-            game.CurrentCategory = null;
-            game.CurrentValue = null;
-            game.ClueRevealed = false;
-            game.WaitingForAnswer = false;
-            game.CurrentPlayer = null;
-            game.CurrentAnswer = null;
-            game.BuzzTime = null;
 
             // Start new round with no winner
             InitializeRound(game, null);

@@ -299,8 +299,6 @@ public class GameService
         
         if (game != null)
         {
-
-            var playerWithControl = game.PlayersInCurrentRound.FirstOrDefault(p => p.HasControl);
             foreach (Player p in game.PlayersInCurrentRound) {
                 await _hubContext.Clients.Client(p.ConnectionId).SendAsync("RoundStarted", p.HasControl, true, game.PlayersInCurrentRound, game.PlayersWaitingForRound);
             }
@@ -354,7 +352,22 @@ public class GameService
 
     public async Task OnDisconnectedAsync(string callerId, Exception? exception)
     {
-        _gameManager.RemovePlayer(callerId);
+        var gameId = _gameManager.RemovePlayer(callerId);
+        if (gameId != "") {
+            var game = _gameManager.GetGame(gameId);
+            if (game != null) {
+                foreach (Player p in game.PlayersInCurrentRound) {
+                    await _hubContext.Clients.Client(p.ConnectionId).SendAsync("RoundStarted", p.HasControl, true, game.PlayersInCurrentRound, game.PlayersWaitingForRound);
+                }
+                foreach (Player p in game.PlayersWaitingForRound) {
+                    await _hubContext.Clients.Client(p.ConnectionId).SendAsync("RoundStarted", false, false, game.PlayersInCurrentRound, game.PlayersWaitingForRound);
+                }
+
+                await _hubContext.Clients.Group(gameId + "_viewers")
+                    .SendAsync("RoundStarted", game.CurrentRound, game.PlayersInCurrentRound, game.PlayersWaitingForRound);
+            }
+        }
+        
     }
 
     private void CancelRoundTimer(string gameId)
