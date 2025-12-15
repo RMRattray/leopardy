@@ -11,6 +11,7 @@ let canBuzz = false;
 let hasBuzzedIn = false;
 let playersInRound = [];
 let waitingPlayers = [];
+let answerTimeLimit = 5;
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeSignalR();
@@ -43,9 +44,10 @@ function initializeSignalR() {
         .withUrl("/gameHub")
         .build();
 
-    connection.on("JoinedGame", (gameCategories, answered) => { console.log("JoinedGame", gameCategories, answered);
+    connection.on("JoinedGame", (gameCategories, answered, maxAnswerDuration) => { console.log("JoinedGame", gameCategories, answered);
         categories = gameCategories;
         clueAnswered = answered || {};
+        answerTimeLimit = maxAnswerDuration;
         
         document.getElementById('joinGame').classList.add('d-none');
         document.getElementById('waitScreen').classList.remove('d-none');
@@ -302,14 +304,14 @@ function buzzIn() {
 }
 
 function startAnswerTimer() {
-    timeRemaining = 5;
+    timeRemaining = answerTimeLimit;
     document.getElementById('timeRemaining').textContent = timeRemaining;
     document.getElementById('timerBar').style.width = '100%';
     
     answerTimer = setInterval(() => {
         timeRemaining--;
         document.getElementById('timeRemaining').textContent = timeRemaining;
-        const percentage = (timeRemaining / 5) * 100;
+        const percentage = (timeRemaining / answerTimeLimit) * 100;
         document.getElementById('timerBar').style.width = percentage + '%';
         
         if (timeRemaining <= 0) {
@@ -317,7 +319,7 @@ function startAnswerTimer() {
             // Auto-submit if time runs out
             submitAnswer();
         }
-    }, 1000);
+    }, 990);
 }
 
 function submitAnswer() {

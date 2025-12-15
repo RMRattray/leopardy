@@ -78,7 +78,7 @@ public class GameService
 
         var behavior = (CorrectGuesserBehavior)correctGuesserBehavior;
         var game = _gameManager.CreateGame(gameName, callerId, categories, 
-            maxPlayersPerRound, maxPlayersPerGame, behavior, correctGuesserChooses, roundMaxDuration, answerTimeLimitSeconds);
+            maxPlayersPerRound, maxPlayersPerGame, behavior, correctGuesserChooses, answerTimeLimitSeconds, roundMaxDuration);
         await _hubContext.Clients.Client(callerId).SendAsync("GameCreated", game.GameId, game.Categories);
         await _hubContext.Groups.AddToGroupAsync(callerId, game.GameId);
     }
@@ -108,7 +108,7 @@ public class GameService
         await _hubContext.Groups.AddToGroupAsync(callerId, gameId);
         await _hubContext.Clients.Groups(gameId, gameId + "_viewers").SendAsync("PlayerJoined", game.Players);
 
-        await _hubContext.Clients.Client(callerId).SendAsync("JoinedGame", game.Categories, game.ClueAnswered);
+        await _hubContext.Clients.Client(callerId).SendAsync("JoinedGame", game.Categories, game.ClueAnswered, game.AnswerTimeLimitSeconds);
     }
 
     /// <summary>
