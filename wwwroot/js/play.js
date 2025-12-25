@@ -47,11 +47,13 @@ function initializeSignalR() {
     connection.on("JoinedGame", (gameCategories, answered, maxAnswerDuration) => { console.log("JoinedGame", gameCategories, answered);
         categories = gameCategories;
         clueAnswered = answered || {};
-        answerTimeLimit = maxAnswerDuration;
+        answerTimeLimit = maxAnswerDuration || 0;
         
         document.getElementById('joinGame').classList.add('d-none');
         document.getElementById('waitScreen').classList.remove('d-none');
         document.getElementById('playerNameDisplay').textContent = playerName;
+
+        if (answerTimeLimit == 0) document.getElementById('answerTimer').classList.add('d-none'); 
     });
 
     connection.on("PlayerRemoved", () => {
@@ -305,6 +307,9 @@ function buzzIn() {
 
 function startAnswerTimer() {
     timeRemaining = answerTimeLimit;
+    console.log("Initial timeRemaining:");
+    console.log(timeRemaining);
+    if (timeRemaining == 0) return; // infinite time
     document.getElementById('timeRemaining').textContent = timeRemaining;
     document.getElementById('timerBar').style.width = '100%';
     
