@@ -97,6 +97,15 @@
                             <input type="number" id="answerTimeLimit" class="form-control" min="1" placeholder="Leave empty for no time limit">
                             <small class="form-text text-muted">Time limit for players to answer after buzzing in. Leave empty for unlimited time.</small>
                         </div>
+
+                        <div class="mb-3" id="clueStaysOnRoundTimeoutDiv" class="d-none">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="clueStaysOnRoundTimeout" checked>
+                                <label class="form-check-label" for="clueStaysOnRoundTimeout">
+                                    If a round times out with no correct guesses, that clue remains on the board
+                                </label>
+                            </div>
+                        </div>
                         
                         <button id="createGameBtn" class="btn btn-primary btn-lg">Create Game</button>
                     </div>

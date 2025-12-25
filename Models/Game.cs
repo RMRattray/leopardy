@@ -32,6 +32,7 @@ public class Game
     public bool CorrectGuesserChooses { get; set; } = true;
     public int? AnswerTimeLimitSeconds { get; set; } // null = no time limit
     public int? RoundMaxDuration { get; set; }
+    public bool ClueStaysOnRoundTimeOut { get; set; }
     
     // Round tracking
     public int CurrentRound { get; set; } = 1;

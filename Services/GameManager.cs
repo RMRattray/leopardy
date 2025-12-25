@@ -10,7 +10,7 @@ public class GameManager
     private readonly object _lock = new();
 
     public Game CreateGame(string gameName, string hostConnectionId, List<Category> categories, 
-        int? maxPlayersPerRound, int? maxPlayersPerGame, CorrectGuesserBehavior correctGuesserBehavior, bool correctGuesserChooses, int? answerTimeLimitSeconds, int? roundMaxDuration)
+        int? maxPlayersPerRound, int? maxPlayersPerGame, CorrectGuesserBehavior correctGuesserBehavior, bool correctGuesserChooses, int? answerTimeLimitSeconds, int? roundMaxDuration, bool clueStaysOnRoundTimeout)
     {
         var gameId = GenerateGameCode();
         var game = new Game
@@ -27,7 +27,8 @@ public class GameManager
             CorrectGuesserBehavior = correctGuesserBehavior,
             CorrectGuesserChooses = correctGuesserBehavior == CorrectGuesserBehavior.Stay ? correctGuesserChooses : false,
             AnswerTimeLimitSeconds = answerTimeLimitSeconds,
-            RoundMaxDuration = roundMaxDuration
+            RoundMaxDuration = roundMaxDuration,
+            ClueStaysOnRoundTimeOut = clueStaysOnRoundTimeout
         };
 
         _games.TryAdd(gameId, game);
@@ -335,34 +336,34 @@ public class GameManager
         return "";
     }
 
-    public bool MarkClueAsAnsweredAndStartNewRound(string gameId)
+    public string? MarkClueAsAnsweredAndStartNewRound(string gameId)
     {
         if (!_games.TryGetValue(gameId, out var game))
-            return false;
+            return null;
 
         lock (_lock)
         {
             if (game.CurrentCategory == null || game.CurrentValue == null)
-                return false;
+                return null;
 
             var categoryIndex = game.Categories.FindIndex(c => c.Name == game.CurrentCategory);
             if (categoryIndex < 0)
-                return false;
+                return null;
 
             var category = game.Categories[categoryIndex];
             var clueIndex = category.Clues.FindIndex(c => c.Value == game.CurrentValue);
             if (clueIndex < 0)
-                return false;
+                return null;
 
             var clueKey = $"{categoryIndex}-{clueIndex}";
-            game.ClueAnswered[clueKey] = true;
 
             // Start new round with no winner
+            if (!game.ClueStaysOnRoundTimeOut) game.ClueAnswered[clueKey] = true;
             InitializeRound(game, null);
             game.CurrentRound++;
-        }
 
-        return true;
+            return clueKey;
+        }
     }
 
     private string GenerateGameCode()

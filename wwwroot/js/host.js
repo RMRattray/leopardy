@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // document.getElementById('closeClueBtn').addEventListener('click', closeClue);
     document.getElementById('savedGameSelect').addEventListener('change', handleSavedGameSelect);
     document.getElementById('correctGuesserBehavior').addEventListener('change', handleCorrectGuesserChange);
+    document.getElementById('roundTimeLimit').addEventListener('change', handleRoundTimeoutChange);
 });
 
 function initializeSignalR() {
@@ -200,6 +201,19 @@ function handleCorrectGuesserChange(event) {
     }
 }
 
+function handleRoundTimeoutChange(event) {
+    switch (event.target.value) {
+        case "":
+        case "0":
+            document.getElementById("clueStaysOnRoundTimeoutDiv").classList.add("d-none");
+            break;
+
+        default:
+            document.getElementById("clueStaysOnRoundTimeoutDiv").classList.remove("d-none");
+            break;
+    }
+}
+
 function createGame() {
     const activeTab = document.querySelector('.nav-link.active').id;
     let selectedCategories = null;
@@ -239,6 +253,7 @@ function createGame() {
     
     const correctGuesserBehavior = parseInt(document.getElementById('correctGuesserBehavior').value);
     const correctGuesserChooses = document.getElementById('correctGuesserChooses').checked;
+    const clueStaysOnRoundTimeout = document.getElementById('clueStaysOnRoundTimeout').checked;
     
     const roundTimeLimitInput = document.getElementById('roundTimeLimit').value;
     const roundTimeLimitSeconds = roundTimeLimitInput ? parseInt(roundTimeLimitInput) : null;
@@ -248,11 +263,11 @@ function createGame() {
     
     if (selectedCategories) {
         // Use custom categories
-        connection.invoke("CreateGameWithCategories", "Jeopardy Game", selectedCategories, maxPlayersPerRound, maxPlayersPerGame, correctGuesserBehavior, correctGuesserChooses, roundTimeLimitSeconds, answerTimeLimitSeconds);
+        connection.invoke("CreateGameWithCategories", "Jeopardy Game", selectedCategories, maxPlayersPerRound, maxPlayersPerGame, correctGuesserBehavior, correctGuesserChooses, roundTimeLimitSeconds, answerTimeLimitSeconds, clueStaysOnRoundTimeout);
     } else {
         // Use template
         const template = document.getElementById('gameTemplate').value;
-        connection.invoke("CreateGame", "Jeopardy Game", template, maxPlayersPerRound, maxPlayersPerGame, correctGuesserBehavior, correctGuesserChooses, roundTimeLimitSeconds, answerTimeLimitSeconds);
+        connection.invoke("CreateGame", "Jeopardy Game", template, maxPlayersPerRound, maxPlayersPerGame, correctGuesserBehavior, correctGuesserChooses, roundTimeLimitSeconds, answerTimeLimitSeconds, clueStaysOnRoundTimeout);
     }
 }
 

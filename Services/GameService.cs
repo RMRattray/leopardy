@@ -18,7 +18,7 @@ public class GameService
     }
 
     public async Task CreateGame(string callerId, string gameName, string templateName, int? maxPlayersPerRound, int? maxPlayersPerGame, 
-        int correctGuesserBehavior, bool correctGuesserChooses, int? roundMaxDuration, int? answerTimeLimitSeconds)
+        int correctGuesserBehavior, bool correctGuesserChooses, int? roundMaxDuration, int? answerTimeLimitSeconds, bool clueStaysOnRoundTimeout)
     {
         var templates = GameDataService.GetGameTemplates();
         var template = templates.FirstOrDefault(t => t.Name == templateName);
@@ -38,13 +38,13 @@ public class GameService
 
         var behavior = (CorrectGuesserBehavior)correctGuesserBehavior;
         var game = _gameManager.CreateGame(gameName, callerId, template.Categories, 
-            maxPlayersPerRound, maxPlayersPerGame, behavior, correctGuesserChooses, answerTimeLimitSeconds, roundMaxDuration);
+            maxPlayersPerRound, maxPlayersPerGame, behavior, correctGuesserChooses, answerTimeLimitSeconds, roundMaxDuration, clueStaysOnRoundTimeout);
         await _hubContext.Clients.Client(callerId).SendAsync("GameCreated", game.GameId, game.Categories);
         await _hubContext.Groups.AddToGroupAsync(callerId, game.GameId);
     }
 
     public async Task CreateGameWithCategories(string callerId, string gameName, object categoriesData, int? maxPlayersPerRound, int? maxPlayersPerGame, 
-        int correctGuesserBehavior, bool correctGuesserChooses, int? roundMaxDuration, int? answerTimeLimitSeconds)
+        int correctGuesserBehavior, bool correctGuesserChooses, int? roundMaxDuration, int? answerTimeLimitSeconds, bool clueStaysOnRoundTimeout)
     {
         // Validate max players constraints
         if (maxPlayersPerGame.HasValue && maxPlayersPerRound.HasValue && maxPlayersPerRound.Value > maxPlayersPerGame.Value)
@@ -78,7 +78,7 @@ public class GameService
 
         var behavior = (CorrectGuesserBehavior)correctGuesserBehavior;
         var game = _gameManager.CreateGame(gameName, callerId, categories, 
-            maxPlayersPerRound, maxPlayersPerGame, behavior, correctGuesserChooses, answerTimeLimitSeconds, roundMaxDuration);
+            maxPlayersPerRound, maxPlayersPerGame, behavior, correctGuesserChooses, answerTimeLimitSeconds, roundMaxDuration, clueStaysOnRoundTimeout);
         await _hubContext.Clients.Client(callerId).SendAsync("GameCreated", game.GameId, game.Categories);
         await _hubContext.Groups.AddToGroupAsync(callerId, game.GameId);
     }
@@ -438,9 +438,15 @@ public class GameService
                 {
 
                     // Mark clue as answered and start new round
-                    if (_gameManager.MarkClueAsAnsweredAndStartNewRound(gameId))
+                    var clueKey = _gameManager.MarkClueAsAnsweredAndStartNewRound(gameId);
+                    if (clueKey != null)
                     {
                         _gameRoundTimers.TryRemove(gameId, out _);
+
+                        // Inform players that change has occurred
+                        game = _gameManager.GetGame(gameId);
+                        if (game != null && !game.ClueStaysOnRoundTimeOut)
+                            await _hubContext.Clients.Groups(gameId, gameId + "_viewers").SendAsync("AnswerJudged", true, game.Players, clueKey);
                         await StartNewRound(gameId);
                     }
                 }
