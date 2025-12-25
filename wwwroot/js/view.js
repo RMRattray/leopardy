@@ -4,7 +4,6 @@ let categories = [];
 let clueAnswered = {};
 let playersInRound = [];
 let waitingPlayers = [];
-let currentRound = 1;
 let buzzIns = [];
 let answers = [];
 
@@ -20,16 +19,14 @@ function initializeSignalR() {
     connection.on("GameStarted", (playerName, playersInCurrentRound, round, playersWaiting) => {
         playersInRound = playersInCurrentRound || [];
         waitingPlayers = playersWaiting || [];
-        currentRound = round || 1;
         document.getElementById('waitingScreen').classList.add('d-none');
         document.getElementById('gameView').classList.remove('d-none');
-        document.getElementById('currentRound').textContent = currentRound;
         updatePlayersInRound();
         updateWaitingPlayers();
         if (categories.length > 0) {
             buildBoard();
         }
-        updateChooser();
+        updateChooser(true);
     });
 
     // Keep viewers up to date with total player count before/after game start
@@ -44,16 +41,17 @@ function initializeSignalR() {
     // For viewers, RoundStarted is broadcast to the viewers group with:
     // (roundNumber, playersInCurrentRound, playersWaitingForRound)
     connection.on("RoundStarted", (round, playersInCurrentRound, playersWaiting) => {
+        console.log("Round started");
         playersInRound = playersInCurrentRound || [];
         waitingPlayers = playersWaiting || [];
-        currentRound = round || 1;
-        document.getElementById('currentRound').textContent = currentRound;
         updatePlayersInRound();
         updateWaitingPlayers();
-        updateChooser();
+        updateChooser(true);
+        hideClue();
     });
 
     connection.on("ClueSelected", (question, categoryName, value) => {
+        updateChooser(false);
         showClue(question, categoryName, value);
         buzzIns = [];
         answers = [];
@@ -81,11 +79,6 @@ function initializeSignalR() {
         updatePlayersInRound();
         updateWaitingPlayers();
         updateBoard();
-        updateChooser();
-        
-        setTimeout(() => {
-            hideClue();
-        }, 3000);
     });
 
     connection.on("ClueReset", () => {
@@ -160,18 +153,15 @@ function updatePlayersInRound() {
     });
 }
 
-function updateChooser() {
+function updateChooser(choosing) {
     const chooserArea = document.getElementById('playerChooserArea');
     const chooserName = document.getElementById('chooserPlayerName');
     
     const playerWithControl = playersInRound.find(p => (p.hasControl || p.HasControl));
     
-    if (playerWithControl && !document.getElementById('currentClueArea').classList.contains('d-none')) {
-        // Clue is active, don't show chooser
-        chooserArea.classList.add('d-none');
-    } else if (playerWithControl) {
+    if (playerWithControl && choosing) {
         const playerName = playerWithControl.name || playerWithControl.Name || 'Unknown';
-        chooserName.textContent = `${playerName} should choose a clue`;
+        chooserName.textContent = playerName;
         chooserArea.classList.remove('d-none');
     } else {
         chooserArea.classList.add('d-none');
@@ -238,13 +228,10 @@ function showClue(question, categoryName, value) {
     document.getElementById('currentCategory').textContent = categoryName;
     document.getElementById('currentValue').textContent = `$${value}`;
     document.getElementById('currentClueArea').classList.remove('d-none');
-    document.getElementById('playerChooserArea').classList.add('d-none');
-    updateBuzzIns();
 }
 
 function hideClue() {
     document.getElementById('currentClueArea').classList.add('d-none');
-    updateChooser();
     buzzIns = [];
     answers = [];
     updateBuzzIns();
