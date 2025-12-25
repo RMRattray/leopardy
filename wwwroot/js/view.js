@@ -10,8 +10,6 @@ let answers = [];
 
 document.addEventListener('DOMContentLoaded', function() {    
     initializeSignalR();
-
-    document.getElementById('joinGameBtn').addEventListener('click', joinGame);
 });
 
 function initializeSignalR() {
@@ -116,6 +114,16 @@ function initializeSignalR() {
     connection.start()
         .then(() => {
             console.log("SignalR Connected");
+
+            // Get gameId from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            gameId = urlParams.get('gameId');
+
+            if (gameId) {
+                console.log("Connection is being invoked to join game");
+                connection.invoke("JoinView", gameId);
+            }
+            else document.getElementById('joinGameBtn').addEventListener('click', joinGame);
         })
         .catch(err => {
             console.error("SignalR Connection Error: ", err);
@@ -123,7 +131,6 @@ function initializeSignalR() {
 }
 
 function joinGame() {
-    console.log("This function runs");
     gameId = document.getElementById('gameCodeInput').value.trim();
     
     if (!gameId) {
