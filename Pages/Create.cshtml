@@ -6,7 +6,7 @@
 
 <div class="container mt-4">
     <div class="row">
-        <div class="col-12">
+        <div id="createDiv" class="col-12 d-none">
             <h1 class="mb-4">Create a Round-and-Round Game</h1>
             
             <div class="mb-3">
@@ -17,10 +17,13 @@
             <div class="mb-3">
                 <button id="addCategoryBtn" class="btn btn-primary">Add Category</button>
                 <!-- <button id="downloadCsvBtn" class="btn btn-success ms-2">Download CSV</button> -->
-                <button id="saveGameBtn" class="btn btn-info ms-2 d-none">Save Game</button>
+                <button id="saveGameBtn" class="btn btn-info ms-2">Save Game</button>
             </div>
 
             <div id="categoriesContainer"></div>
+        </div>
+        <div id="cannotCreateDiv" class="col-12">
+            <h1 class="mb-4"><a href="/Login">Log in</a> or <a href="/Register">create account</a> to create a game</h1>
         </div>
     </div>
 </div>
@@ -34,7 +37,8 @@
             .then(response => response.json())
             .then(data => {
                 if (data.isAuthenticated) {
-                    document.getElementById('saveGameBtn').classList.remove('d-none');
+                    document.getElementById('createDiv').classList.remove('d-none');
+                    document.getElementById('cannotCreateDiv').classList.add('d-none');
                 }
             });
     </script>
