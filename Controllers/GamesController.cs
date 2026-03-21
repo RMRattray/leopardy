@@ -108,15 +108,30 @@ public class GamesController : ControllerBase
 
         var gameJson = JsonSerializer.Serialize(categories);
 
-        var savedGame = new SavedGame
+        SavedGame? savedGame = null;
+        if (gameData.Id.HasValue)
         {
-            Name = gameData.Name,
-            UserId = user.Id,
-            GameData = gameJson,
-            CreatedAt = DateTime.UtcNow
-        };
+            savedGame = await _context.SavedGames
+                .FirstOrDefaultAsync(g => g.Id == gameData.Id.Value && g.UserId == user.Id);
+        }
 
-        _context.SavedGames.Add(savedGame);
+        if (savedGame == null)
+        {
+            savedGame = new SavedGame
+            {
+                Name = gameData.Name,
+                UserId = user.Id,
+                GameData = gameJson,
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.SavedGames.Add(savedGame);
+        }
+        else
+        {
+            savedGame.Name = gameData.Name;
+            savedGame.GameData = gameJson;
+        }
+
         await _context.SaveChangesAsync();
 
         return Ok(new { success = true, id = savedGame.Id });
@@ -212,6 +227,7 @@ public class AuthController : ControllerBase
 
 public class GameDataDto
 {
+    public int? Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public List<CategoryDto> Categories { get; set; } = new();
 }

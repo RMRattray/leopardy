@@ -1,0 +1,47 @@
+@page
+@model Leopardy.Pages.GamesModel
+@{
+    ViewData["Title"] = "My Games";
+}
+
+<div class="container mt-4">
+    <h1 class="mb-4">My Saved Games</h1>
+
+    @if (!Model.IsAuthenticated)
+    {
+        <div class="alert alert-info">
+            <a href="/Login">Log in</a> to view and manage your saved games.
+        </div>
+    }
+    else if (Model.SavedGames.Count == 0)
+    {
+        <div class="alert alert-secondary">
+            You do not have any saved games yet. <a href="/Create">Create one now</a>.
+        </div>
+    }
+    else
+    {
+        <div class="list-group">
+            @foreach (var game in Model.SavedGames)
+            {
+                var isHighlighted = Model.HighlightSavedGameId.HasValue && Model.HighlightSavedGameId.Value == game.Id;
+                <div class="list-group-item @(isHighlighted ? "list-group-item-warning" : string.Empty)">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <h5 class="mb-1">@game.Name</h5>
+                            <small class="text-muted">Saved @game.CreatedAt.ToLocalTime().ToString("g")</small>
+                            @if (isHighlighted)
+                            {
+                                <span class="badge bg-success ms-2">Recently saved</span>
+                            }
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a class="btn btn-outline-primary" href="/Create?savedGameId=@game.Id">Edit</a>
+                            <a class="btn btn-primary" href="/Host?savedGameId=@game.Id">Host</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

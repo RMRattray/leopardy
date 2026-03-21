@@ -5,8 +5,12 @@ let clueAnswered = {};
 
 let customCategories = null;
 let isAuthenticated = false;
+let preselectedSavedGameId = null;
 
 document.addEventListener('DOMContentLoaded', function() {
+    const params = new URLSearchParams(window.location.search);
+    preselectedSavedGameId = params.get('savedGameId');
+
     initializeSignalR();
     
     // Check authentication
@@ -129,6 +133,22 @@ function loadSavedGames() {
                 option.textContent = game.name;
                 select.appendChild(option);
             });
+
+            if (preselectedSavedGameId) {
+                const matchingOption = Array.from(select.options)
+                    .find(option => option.value === preselectedSavedGameId);
+
+                if (matchingOption) {
+                    select.value = preselectedSavedGameId;
+                    handleSavedGameSelect();
+
+                    const savedTabButton = document.getElementById('saved-tab');
+                    if (savedTabButton) {
+                        const tab = new bootstrap.Tab(savedTabButton);
+                        tab.show();
+                    }
+                }
+            }
         })
         .catch(err => {
             console.error('Error loading saved games:', err);
