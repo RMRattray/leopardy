@@ -18,7 +18,8 @@ public class GameService
     }
 
     public async Task CreateGame(string callerId, string gameName, string templateName, int? maxPlayersPerRound, int? maxPlayersPerGame, 
-        int correctGuesserBehavior, bool correctGuesserChooses, int? roundMaxDuration, int? answerTimeLimitSeconds, bool clueStaysOnRoundTimeout)
+        int correctGuesserBehavior, bool correctGuesserChooses, int? roundMaxDuration, int? answerTimeLimitSeconds, bool clueStaysOnRoundTimeout,
+        int endViewResult, bool scoresVisibleOnWatch)
     {
         var templates = GameDataService.GetGameTemplates();
         var template = templates.FirstOrDefault(t => t.Name == templateName);
@@ -37,14 +38,17 @@ public class GameService
         }
 
         var behavior = (CorrectGuesserBehavior)correctGuesserBehavior;
+        var end = (EndViewOption)endViewResult;
         var game = _gameManager.CreateGame(gameName, callerId, template.Categories, 
-            maxPlayersPerRound, maxPlayersPerGame, behavior, correctGuesserChooses, answerTimeLimitSeconds, roundMaxDuration, clueStaysOnRoundTimeout);
+            maxPlayersPerRound, maxPlayersPerGame, behavior, correctGuesserChooses, answerTimeLimitSeconds, roundMaxDuration, clueStaysOnRoundTimeout,
+            end, scoresVisibleOnWatch);
         await _hubContext.Clients.Client(callerId).SendAsync("GameCreated", game.GameId, game.Categories);
         await _hubContext.Groups.AddToGroupAsync(callerId, game.GameId);
     }
 
     public async Task CreateGameWithCategories(string callerId, string gameName, object categoriesData, int? maxPlayersPerRound, int? maxPlayersPerGame, 
-        int correctGuesserBehavior, bool correctGuesserChooses, int? roundMaxDuration, int? answerTimeLimitSeconds, bool clueStaysOnRoundTimeout)
+        int correctGuesserBehavior, bool correctGuesserChooses, int? roundMaxDuration, int? answerTimeLimitSeconds, bool clueStaysOnRoundTimeout,
+        int endViewResult, bool scoresVisibleOnWatch)
     {
         // Validate max players constraints
         if (maxPlayersPerGame.HasValue && maxPlayersPerRound.HasValue && maxPlayersPerRound.Value > maxPlayersPerGame.Value)
@@ -77,8 +81,10 @@ public class GameService
         }
 
         var behavior = (CorrectGuesserBehavior)correctGuesserBehavior;
+        var end = (EndViewOption)endViewResult;
         var game = _gameManager.CreateGame(gameName, callerId, categories, 
-            maxPlayersPerRound, maxPlayersPerGame, behavior, correctGuesserChooses, answerTimeLimitSeconds, roundMaxDuration, clueStaysOnRoundTimeout);
+            maxPlayersPerRound, maxPlayersPerGame, behavior, correctGuesserChooses, answerTimeLimitSeconds, roundMaxDuration, clueStaysOnRoundTimeout,
+            end, scoresVisibleOnWatch);
         await _hubContext.Clients.Client(callerId).SendAsync("GameCreated", game.GameId, game.Categories);
         await _hubContext.Groups.AddToGroupAsync(callerId, game.GameId);
     }

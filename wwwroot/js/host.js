@@ -281,13 +281,20 @@ function createGame() {
     const answerTimeLimitInput = document.getElementById('answerTimeLimit').value;
     const answerTimeLimitSeconds = answerTimeLimitInput ? parseInt(answerTimeLimitInput) : null;
     
+    const endViewResult = parseInt(document.getElementById('endViewResult').value);
+    const scoresVisibleOnWatch = document.getElementById('scoresVisibleOnWatch').checked;
+
     if (selectedCategories) {
         // Use custom categories
-        connection.invoke("CreateGameWithCategories", "Jeopardy Game", selectedCategories, maxPlayersPerRound, maxPlayersPerGame, correctGuesserBehavior, correctGuesserChooses, roundTimeLimitSeconds, answerTimeLimitSeconds, clueStaysOnRoundTimeout);
+        connection.invoke("CreateGameWithCategories", "Jeopardy Game", selectedCategories, maxPlayersPerRound, maxPlayersPerGame, 
+            correctGuesserBehavior, correctGuesserChooses, roundTimeLimitSeconds, answerTimeLimitSeconds, clueStaysOnRoundTimeout,
+            endViewResult, scoresVisibleOnWatch);
     } else {
         // Use template
         const template = document.getElementById('gameTemplate').value;
-        connection.invoke("CreateGame", "Jeopardy Game", template, maxPlayersPerRound, maxPlayersPerGame, correctGuesserBehavior, correctGuesserChooses, roundTimeLimitSeconds, answerTimeLimitSeconds, clueStaysOnRoundTimeout);
+        connection.invoke("CreateGame", "Jeopardy Game", template, maxPlayersPerRound, maxPlayersPerGame, correctGuesserBehavior, 
+            correctGuesserChooses, roundTimeLimitSeconds, answerTimeLimitSeconds, clueStaysOnRoundTimeout,
+            endViewResult, scoresVisibleOnWatch);
     }
 }
 

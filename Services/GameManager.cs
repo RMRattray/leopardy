@@ -10,7 +10,9 @@ public class GameManager
     private readonly object _lock = new();
 
     public Game CreateGame(string gameName, string hostConnectionId, List<Category> categories, 
-        int? maxPlayersPerRound, int? maxPlayersPerGame, CorrectGuesserBehavior correctGuesserBehavior, bool correctGuesserChooses, int? answerTimeLimitSeconds, int? roundMaxDuration, bool clueStaysOnRoundTimeout)
+        int? maxPlayersPerRound, int? maxPlayersPerGame, CorrectGuesserBehavior correctGuesserBehavior, bool correctGuesserChooses, 
+        int? answerTimeLimitSeconds, int? roundMaxDuration, bool clueStaysOnRoundTimeout,
+        EndViewOption endViewResult, bool scoresVisibleOnWatch)
     {
         var gameId = GenerateGameCode();
         var game = new Game
@@ -28,7 +30,9 @@ public class GameManager
             CorrectGuesserChooses = correctGuesserBehavior == CorrectGuesserBehavior.Stay ? correctGuesserChooses : false,
             AnswerTimeLimitSeconds = answerTimeLimitSeconds,
             RoundMaxDuration = roundMaxDuration,
-            ClueStaysOnRoundTimeOut = clueStaysOnRoundTimeout
+            ClueStaysOnRoundTimeOut = clueStaysOnRoundTimeout,
+            EndViewResult = endViewResult,
+            ScoresVisibleOnWatch = scoresVisibleOnWatch
         };
 
         _games.TryAdd(gameId, game);

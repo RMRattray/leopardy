@@ -7,6 +7,15 @@ public enum CorrectGuesserBehavior
     Never
 }
 
+public enum EndViewOption
+{
+    Nothing,
+    Theirs,
+    Podium,
+    PodiumAndTheirs,
+    All
+}
+
 public class Game
 {
     public string GameId { get; set; } = string.Empty;
@@ -33,6 +42,8 @@ public class Game
     public int? AnswerTimeLimitSeconds { get; set; } // null = no time limit
     public int? RoundMaxDuration { get; set; }
     public bool ClueStaysOnRoundTimeOut { get; set; }
+    public EndViewOption EndViewResult { get; set; }
+    public bool ScoresVisibleOnWatch { get; set; }
     
     // Round tracking
     public int CurrentRound { get; set; } = 1;

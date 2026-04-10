@@ -15,17 +15,21 @@ public class GameHub : Hub
     }
 
     public async Task CreateGame(string gameName, string templateName, int? maxPlayersPerRound, int? maxPlayersPerGame, 
-        int correctGuesserBehavior, bool correctGuesserChooses, int? roundMaxDuration, int? answerTimeLimitSeconds, bool clueStaysOnRoundTimeout)
+        int correctGuesserBehavior, bool correctGuesserChooses, int? roundMaxDuration, int? answerTimeLimitSeconds, bool clueStaysOnRoundTimeout,
+        int endViewResult, bool scoresVisibleOnWatch)
     {
         await _gameService.CreateGame(Context.ConnectionId, gameName, templateName, maxPlayersPerRound, maxPlayersPerGame,
-            correctGuesserBehavior, correctGuesserChooses, roundMaxDuration, answerTimeLimitSeconds, clueStaysOnRoundTimeout);
+            correctGuesserBehavior, correctGuesserChooses, roundMaxDuration, answerTimeLimitSeconds, clueStaysOnRoundTimeout,
+            endViewResult, scoresVisibleOnWatch);
     }
 
     public async Task CreateGameWithCategories(string gameName, object categoriesData, int? maxPlayersPerRound, int? maxPlayersPerGame, 
-        int correctGuesserBehavior, bool correctGuesserChooses, int? roundMaxDuration, int? answerTimeLimitSeconds, bool clueStaysOnRoundTimeout)
+        int correctGuesserBehavior, bool correctGuesserChooses, int? roundMaxDuration, int? answerTimeLimitSeconds, bool clueStaysOnRoundTimeout,
+        int endViewResult, bool scoresVisibleOnWatch)
     {
         await _gameService.CreateGameWithCategories(Context.ConnectionId, gameName, categoriesData, maxPlayersPerRound, maxPlayersPerGame,
-            correctGuesserBehavior, correctGuesserChooses, roundMaxDuration, answerTimeLimitSeconds, clueStaysOnRoundTimeout);
+            correctGuesserBehavior, correctGuesserChooses, roundMaxDuration, answerTimeLimitSeconds, clueStaysOnRoundTimeout,
+            endViewResult, scoresVisibleOnWatch);
     }
 
     public async Task JoinGame(string gameId, string playerName)
