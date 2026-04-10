@@ -100,6 +100,13 @@ function initializeSignalR() {
         }
     });
 
+    connection.on("GameOver", (playerInfo) => {
+        waitingPlayers = [];
+        updateWaitingPlayers();
+        playersInRound = playerInfo || [];
+        updatePlayersInRound();
+    })
+
     connection.on("Error", (message) => {
         console.error("Error: " + message);
     });

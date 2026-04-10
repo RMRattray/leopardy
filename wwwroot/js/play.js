@@ -67,7 +67,7 @@ function initializeSignalR() {
         document.getElementById('waitScreen').classList.add('d-none');
         document.getElementById('gameView').classList.remove('d-none');
 
-        updateWaitingPlayers();
+        updateWaitingPlayers(true);
         buildBoard();
     })
 
@@ -99,7 +99,7 @@ function initializeSignalR() {
             document.getElementById('playerListArea').classList.remove('d-none');
         }
 
-        updateWaitingPlayers();
+        updateWaitingPlayers(true);
     })
 
     connection.on("ClueSelected", (question, categoryName, value) => { console.log("ClueSelected", question, categoryName, value);
@@ -163,6 +163,16 @@ function initializeSignalR() {
         document.getElementById('buzzBtn').disabled = true;
         document.getElementById('buzzBtn').textContent = "Timed out";
     });
+
+    connection.on("GameOver", (playerInfo) => {
+        document.getElementById('boardView').classList.add('d-none');
+        document.getElementById('clueView').classList.add('d-none');
+        document.getElementById('gameOverView').classList.remove('d-none');
+        
+        waitingPlayers = [];
+        playersInRound = playerInfo;
+        updateWaitingPlayers(false);
+    })
 
     connection.on("Error", (message) => { console.log("Error", message);
         alert("Error: " + message);
@@ -343,7 +353,7 @@ function submitAnswer() {
     document.getElementById('answerArea').classList.add('d-none');
 }
 
-function updateWaitingPlayers() {
+function updateWaitingPlayers(gameContinuing) {
     const waitingPlayersList = document.getElementById('waitingPlayers');
     if (!waitingPlayersList) return;
 
@@ -355,7 +365,7 @@ function updateWaitingPlayers() {
         const playerName = player.name || player.Name || 'Unknown';
         
         li.innerHTML = `
-            <span><span class="badge bg-success text-light me-2">Playing</span>${playerName}</span>
+            <span><span class="badge bg-success text-light me-2">${gameContinuing ? "Playing" : (player.Score ? player.Score : "--")}</span>${playerName}</span>
         `;
         waitingPlayersList.appendChild(li);
     });

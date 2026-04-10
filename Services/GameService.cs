@@ -288,8 +288,13 @@ public class GameService
         {
             await _hubContext.Clients.Groups(gameId, gameId + "_viewers")
                 .SendAsync("AnswerJudged", isCorrect, game.Players, clueKey);
-            
-            if (clueKey != null)
+
+            if (game.Ended) {
+                // TODO:  edit game.Players based on game.EndViewResult b4 sending
+                await _hubContext.Clients.Groups(gameId, gameId + "_viewers")
+                    .SendAsync("GameOver", game.Players);
+            }
+            else if (clueKey != null)
             {
                 await StartNewRound(gameId);
             }

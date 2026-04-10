@@ -24,6 +24,7 @@ public class GameManager
             ClueAnswered = categories.SelectMany((cat, catIndex) =>
                 cat.Clues.Select((clue, clueIndex) =>
                     $"{catIndex}-{clueIndex}")).ToDictionary(key => key, _ => false),
+            Unanswered = ClueAnswered.length(), // TODO: number of keys in dictionary
             MaxPlayersPerRound = maxPlayersPerRound,
             MaxPlayersPerGame = maxPlayersPerGame,
             CorrectGuesserBehavior = correctGuesserBehavior,
@@ -294,9 +295,14 @@ public class GameManager
         game.CurrentPlayer = null;
         if (isCorrect || game.PlayersNotBuzzedInCurrentRound == 0 || game.RoundOver) {
             game.ClueAnswered[clueKey] = true;
-            
-            InitializeRound(game, correctGuesser);
-            return clueKey;
+            game.Unanswered -= 1;
+
+            if (game.Unanswered > 0) {
+                InitializeRound(game, correctGuesser);
+                return clueKey;
+            } else {
+                game.Ended = true;
+            }
         }
         
         return null;

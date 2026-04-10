@@ -22,8 +22,10 @@ public class Game
     public string GameName { get; set; } = string.Empty;
     public string HostConnectionId { get; set; } = string.Empty;
     public bool Started { get; set; } = false;
+    public bool Ended { get; set; } = false;
     public List<Player> Players { get; set; } = new();
     public List<Category> Categories { get; set; } = new();
+    public int Unanswered;
     public Clue? CurrentClue { get; set; }
     public string? CurrentCategory { get; set; }
     public int? CurrentValue { get; set; }
