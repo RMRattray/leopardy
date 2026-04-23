@@ -24,7 +24,7 @@ public class GameManager
             ClueAnswered = categories.SelectMany((cat, catIndex) =>
                 cat.Clues.Select((clue, clueIndex) =>
                     $"{catIndex}-{clueIndex}")).ToDictionary(key => key, _ => false),
-            Unanswered = ClueAnswered.length(), // TODO: number of keys in dictionary
+            Unanswered = categories.Select( (cat) => cat.Clues.Count).Aggregate(0, (total, next) => total + next),
             MaxPlayersPerRound = maxPlayersPerRound,
             MaxPlayersPerGame = maxPlayersPerGame,
             CorrectGuesserBehavior = correctGuesserBehavior,
