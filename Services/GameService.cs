@@ -291,19 +291,23 @@ public class GameService
 
             if (game.Ended) {
 
+                // Sort and rank players
                 game.Players.Sort( delegate(Player playerA, Player playerB) {
                     return playerB.Score - playerA.Score; // not going to worry about integer overflow here
                 });
-
-                var podiumPlayers = game.Players.Slice(0,3);
-                var emptyPlayers = new List<Player>();
-
-                Console.WriteLine("\nAfter sort:");
-                foreach (Player aPlayer in game.Players)
-                {
-                    Console.WriteLine(aPlayer.Name);
+                var i = 0;
+                while (i < game.Players.Count) {
+                    game.Players[i].Rank = i + 1;
+                    ++i;
                 }
 
+                // Calculate the podium (anyone in Top 3 or tied with third person)
+                var podiumPlayerCount = 3;
+                while (podiumPlayerCount < game.Players.Count && game.Players[podiumPlayerCount].Score == game.Players[2].Score) ++podiumPlayerCount;
+                var podiumPlayers = game.Players.Slice(0, podiumPlayerCount);
+                var emptyPlayers = new List<Player>();
+
+                // Send out information
                 switch (game.EndViewResult) {
                     case EndViewOption.Nothing:
                         await _hubContext.Clients.Groups(gameId, gameId + "_viewers")
@@ -324,10 +328,14 @@ public class GameService
                     case EndViewOption.PodiumAndTheirs:
                         await _hubContext.Clients.Groups(gameId + "_viewers")
                             .SendAsync("GameOver", podiumPlayers);
-                        foreach (Player player in game.Players)
+                        foreach (Player player in podiumPlayers)
+                        {
+                            await _hubContext.Clients.Client(player.ConnectionId)
+                                .SendAsync("GameOver", podiumPlayers);
+                        }
+                        foreach (Player player in game.Players.Slice(podiumPlayerCount, game.Players.Count - podiumPlayerCount))
                         {
                             var playerResult = podiumPlayers
-                                .Where(p => p.ConnectionId != player.ConnectionId)
                                 .ToList();
                             playerResult.Add(player);
 

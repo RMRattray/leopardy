@@ -296,6 +296,7 @@ function showClue(question, categoryName, value) {
 
 function hideClue() {
     document.getElementById('clueQuestion').textContent = "You're in!  Awaiting clue selection";
+    document.getElementById('buzzBtn').textContent = 'Buzz In (Spacebar)';
     document.getElementById('clueCategory').textContent = "";
     document.getElementById('clueValue').textContent = "";
 
@@ -396,12 +397,12 @@ function showScoreView(playerInfo) {
     const scoreList = document.getElementById('scoreList');
     scoreList.innerHTML = '';
 
-    playerInfo.forEach((player, index) => {
+    playerInfo.forEach((player) => {
         const scoreItem = document.createElement('div');
         scoreItem.className = 'list-group-item d-flex justify-content-between align-items-center';
         const scoreName = player.name || player.Name || 'Unknown';
         const scoreValue = player.score || player.Score || 0;
-        const rank = index + 1;
+        const rank = player.rank || player.Rank;
         scoreItem.innerHTML = `
             <span><span class="badge bg-primary me-2">#${rank}</span>${scoreName}</span>
             <span class="badge bg-success rounded-pill">$${scoreValue}</span>
