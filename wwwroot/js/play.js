@@ -12,6 +12,12 @@ let hasBuzzedIn = false;
 let playersInRound = [];
 let waitingPlayers = [];
 let answerTimeLimit = 5;
+const gameOverCompliments = [
+    "Solid effort!",
+    "Great hustle out there!",
+    "Nice game!",
+    "Well played!"
+];
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeSignalR();
@@ -165,13 +171,8 @@ function initializeSignalR() {
     });
 
     connection.on("GameOver", (playerInfo) => {
-        document.getElementById('boardView').classList.add('d-none');
-        document.getElementById('clueView').classList.add('d-none');
-        document.getElementById('gameOverView').classList.remove('d-none');
-        
-        waitingPlayers = [];
-        playersInRound = playerInfo;
-        updateWaitingPlayers(false);
+        console.log("GameOver received", playerInfo);
+        showScoreView(playerInfo || []);
     })
 
     connection.on("Error", (message) => { console.log("Error", message);
@@ -381,5 +382,35 @@ function updateWaitingPlayers(gameContinuing) {
         `;
         waitingPlayersList.appendChild(li);
     });
+}
+
+function showScoreView(playerInfo) {
+    document.getElementById('joinGame').classList.add('d-none');
+    document.getElementById('waitScreen').classList.add('d-none');
+    document.getElementById('gameView').classList.add('d-none');
+    document.getElementById('scoreView').classList.remove('d-none');
+
+    const compliment = gameOverCompliments[Math.floor(Math.random() * gameOverCompliments.length)];
+    document.getElementById('scoreCompliment').textContent = compliment;
+
+    const scoreList = document.getElementById('scoreList');
+    scoreList.innerHTML = '';
+
+    playerInfo.forEach((player, index) => {
+        const scoreItem = document.createElement('div');
+        scoreItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+        const scoreName = player.name || player.Name || 'Unknown';
+        const scoreValue = player.score || player.Score || 0;
+        const rank = index + 1;
+        scoreItem.innerHTML = `
+            <span><span class="badge bg-primary me-2">#${rank}</span>${scoreName}</span>
+            <span class="badge bg-success rounded-pill">$${scoreValue}</span>
+        `;
+        scoreList.appendChild(scoreItem);
+    });
+
+    if (playerInfo.length === 0) {
+        scoreList.innerHTML = '<div class="list-group-item text-muted">No scores to display.</div>';
+    }
 }
 

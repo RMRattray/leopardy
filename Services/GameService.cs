@@ -290,9 +290,57 @@ public class GameService
                 .SendAsync("AnswerJudged", isCorrect, game.Players, clueKey);
 
             if (game.Ended) {
-                // TODO:  edit game.Players based on game.EndViewResult b4 sending
-                await _hubContext.Clients.Groups(gameId, gameId + "_viewers")
-                    .SendAsync("GameOver", game.Players);
+
+                game.Players.Sort( delegate(Player playerA, Player playerB) {
+                    return playerB.Score - playerA.Score; // not going to worry about integer overflow here
+                });
+
+                var podiumPlayers = game.Players.Slice(0,3);
+                var emptyPlayers = new List<Player>();
+
+                Console.WriteLine("\nAfter sort:");
+                foreach (Player aPlayer in game.Players)
+                {
+                    Console.WriteLine(aPlayer.Name);
+                }
+
+                switch (game.EndViewResult) {
+                    case EndViewOption.Nothing:
+                        await _hubContext.Clients.Groups(gameId, gameId + "_viewers")
+                            .SendAsync("GameOver", emptyPlayers);
+                    break;
+                    case EndViewOption.Theirs:
+                        await _hubContext.Clients.Groups(gameId + "_viewers").SendAsync("GameOver", emptyPlayers);
+                        foreach (Player player in game.Players)
+                        {
+                            await _hubContext.Clients.Client(player.ConnectionId)
+                                .SendAsync("GameOver", new List<Player> { player });
+                        }
+                    break;
+                    case EndViewOption.Podium:
+                        await _hubContext.Clients.Groups(gameId, gameId + "_viewers")
+                            .SendAsync("GameOver", podiumPlayers);
+                    break;
+                    case EndViewOption.PodiumAndTheirs:
+                        await _hubContext.Clients.Groups(gameId + "_viewers")
+                            .SendAsync("GameOver", podiumPlayers);
+                        foreach (Player player in game.Players)
+                        {
+                            var playerResult = podiumPlayers
+                                .Where(p => p.ConnectionId != player.ConnectionId)
+                                .ToList();
+                            playerResult.Add(player);
+
+                            await _hubContext.Clients.Client(player.ConnectionId)
+                                .SendAsync("GameOver", playerResult);
+                        }
+                    break;
+                    case EndViewOption.All:
+                        await _hubContext.Clients.Groups(gameId, gameId + "_viewers")
+                            .SendAsync("GameOver", game.Players);
+                    break;
+                }
+                
             }
             else if (clueKey != null)
             {

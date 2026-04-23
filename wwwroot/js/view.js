@@ -101,10 +101,7 @@ function initializeSignalR() {
     });
 
     connection.on("GameOver", (playerInfo) => {
-        waitingPlayers = [];
-        updateWaitingPlayers();
-        playersInRound = playerInfo || [];
-        updatePlayersInRound();
+        showScoreView(playerInfo || []);
     })
 
     connection.on("Error", (message) => {
@@ -305,5 +302,32 @@ function updateWaitingPlayers() {
         `;
         waitingPlayersList.appendChild(li);
     });
+}
+
+function showScoreView(playerInfo) {
+    document.getElementById('joinGame').classList.add('d-none');
+    document.getElementById('waitingScreen').classList.add('d-none');
+    document.getElementById('gameView').classList.add('d-none');
+    document.getElementById('scoreView').classList.remove('d-none');
+
+    const scoreList = document.getElementById('scoreList');
+    scoreList.innerHTML = '';
+
+    playerInfo.forEach((player, index) => {
+        const scoreItem = document.createElement('div');
+        scoreItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+        const scoreName = player.name || player.Name || 'Unknown';
+        const scoreValue = player.score || player.Score || 0;
+        const rank = index + 1;
+        scoreItem.innerHTML = `
+            <span><span class="badge bg-primary me-2">#${rank}</span>${scoreName}</span>
+            <span class="badge bg-success rounded-pill">$${scoreValue}</span>
+        `;
+        scoreList.appendChild(scoreItem);
+    });
+
+    if (playerInfo.length === 0) {
+        scoreList.innerHTML = '<div class="list-group-item text-muted">No scores to display.</div>';
+    }
 }
 

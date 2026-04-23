@@ -31,10 +31,6 @@
     </div>
 
     <div id="gameView" class="d-none">
-        <div id="gameOverView" class="row mb-3 d-none">
-            GAME OVER
-        </div>
-        
         <div class="row mb-3">
             <div class="col-md-8 text-center">
                 <h2 id="playerNameDisplay"></h2>
@@ -84,6 +80,23 @@
                     </thead>
                     <tbody id="cluesBody"></tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="scoreView" class="d-none mt-4">
+        <div class="text-center mb-4">
+            <h1 id="scoreTitle" class="display-2 fw-bold text-uppercase">Game Over</h1>
+            <p id="scoreCompliment" class="h4 text-success"></p>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">Final Scores</h4>
+                    </div>
+                    <div id="scoreList" class="list-group list-group-flush"></div>
+                </div>
             </div>
         </div>
     </div>
